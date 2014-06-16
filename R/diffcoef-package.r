@@ -2,10 +2,11 @@
 #'
 #' @name diffcoef
 #' @docType package
+#' @import reshape2 ggplot2 RColorBrewer grid shiny zoo roow
 
 library(shiny)
 
 #' @export 
-runUI <_ function() {
-    runApp(systemfile('diffcoef_app', package='diffcoef'))
+diffcoef <- function() {
+    runApp(system.file('diffcoef_app', package='diffcoef'))
 }

@@ -1,0 +1,8 @@
+export(diffcoef)
+import(RColorBrewer)
+import(ggplot2)
+import(grid)
+import(reshape2)
+import(roow)
+import(shiny)
+import(zoo)
