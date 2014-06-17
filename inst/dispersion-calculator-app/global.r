@@ -318,8 +318,8 @@ make.plot <- function(moment2.by.time, start.datetime, end.datetime) {
     p <- ggplot(data=full.tab.raw, aes(x=timestep_hour, y=avg.second.moment)) + geom_point() + geom_line() + 
         facet_wrap(~ axis, ncol=1, scales='free_y') + 
         labs(title=bquote(atop(.(date.range), 
-                          list(K[x]==.(round(Ks[[1]], 2)), K[y]==.(round(Ks[[2]], 2)), K[z]==.(round(Ks[[3]], 8))))),
-             y='Average Second Moments')  +
-        scale_x_continuous(breaks=hour.range)
+                   paste(list(K[x]==.(round(Ks[[1]], 2)), K[y]==.(round(Ks[[2]], 2)), K[z]==.(round(Ks[[3]], 8))), ~~(frac(m^2, s))))),
+             y=expression("Weighted Average of Concentration Variance"~~(m^2)))  +
+        scale_x_continuous(breaks=hour.range) + theme(axis.text=element_text(vjust=-.4))
     p
 }

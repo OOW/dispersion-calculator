@@ -1,9 +1,9 @@
 shinyUI(pageWithSidebar(
     headerPanel('DispersionCalculator v0.1'),
     sidebarPanel(wellPanel(
-        fileInput('dye_input', strong('dye input (*.asc)')),
-        fileInput('dxdy_input', strong('dxdy input (*.inp)')),
-        fileInput('depth_input', strong('depth input (*.asc)'))
+        fileInput('dye_input', strong('Dye input (*.asc)')),
+        fileInput('dxdy_input', strong('Dxdy input (*.inp)')),
+        fileInput('depth_input', strong('Depth input (*.asc)'))
     ),
     wellPanel(
         datetimeInput('start_datetime', strong('Start time'), min='1/1/2010', max=format(Sys.Date(), '%m/%d/%Y')),

@@ -21,7 +21,7 @@ shinyServer( function(input, output, session) {
             end.datetime <- start.datetime + as.difftime(input$duration, units='hours')
             ggplotGrob(make.plot(moment2.by.time, start.datetime, end.datetime))
         } else {
-            textGrob('Upload your data and press submit to process.')
+            textGrob('Upload your data, set the start time and duration, and press submit to process.')
         }
     })
 
