@@ -27,3 +27,10 @@ Load and launch *DispersionCalculator*:
 library(DispersionCalculator)
 DispersionCalculator()
 ```
+
+Examining the Code
+================================
+You can find the code used to calculate the average second moments and the dispersion rates
+in the file inst/dispersion-calculator-app/global.r. The function `getSecondMoments` calculates the 
+average second moments for each axis. The function `make.plot` takes these average second moments, calculates
+their corresponding dispersion rates, then outputs the plot.
