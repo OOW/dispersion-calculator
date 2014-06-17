@@ -15,5 +15,5 @@ Imports:
     shiny,
     zoo,
     roow
-License: GPL
+License: MIT
 LazyData: true
