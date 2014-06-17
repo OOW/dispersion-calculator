@@ -19,7 +19,7 @@ shinyUI(pageWithSidebar(
     wellPanel(
         downloadButton('download', 'Download plot')
     )),
-    mainPanel(plotOutput('second_moment_timeseries'))
+    mainPanel(plotOutput('second_moment_timeseries', height='800px'))
 ))
 
 # 2012-8-5 9:15

@@ -32,7 +32,7 @@ shinyServer( function(input, output, session) {
     output$download <- downloadHandler(
         filename='second_moment_plot.png',
         content=function(filename) {
-            png(filename=filename, height=1100, width=1400)
+            png(filename=filename, height=800, width=600)
             grid.draw(second_moment_plot())
             dev.off()
         }

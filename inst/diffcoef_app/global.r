@@ -314,10 +314,11 @@ make.plot <- function(moment2.by.time, start.datetime, end.datetime) {
     full.tab.raw <- melt(full.tab, id.var='timestep_hour', variable.name='axis', value.name='avg.second.moment')
 
     # make the plot
+    date.range <- paste(format(start.datetime, '%m/%d/%Y %H:%M'), '--', format(end.datetime, '%m/%d/%Y %H:%M'))
     p <- ggplot(data=full.tab.raw, aes(x=timestep_hour, y=avg.second.moment)) + geom_point() + geom_line() + 
         facet_wrap(~ axis, ncol=1, scales='free_y') + 
-        labs(title=paste0(paste(paste(format(start.datetime, '%m/%d/%Y %H:%M'), '--', format(end.datetime, '%m/%d/%Y %H:%M')), 
-                          '\nKx=', round(Ks[[1]], 2), ', Ky=', round(Ks[[2]], 2), ', Kz=', round(Ks[[3]], 8))), 
+        labs(title=bquote(atop(.(date.range), 
+                          list(K[x]==.(round(Ks[[1]], 2)), K[y]==.(round(Ks[[2]], 2)), K[z]==.(round(Ks[[3]], 8))))),
              y='Average Second Moments')  +
         scale_x_continuous(breaks=hour.range)
     p
