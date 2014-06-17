@@ -1,4 +1,4 @@
-export(diffcoef)
+export(DispersionCalculator)
 import(RColorBrewer)
 import(ggplot2)
 import(grid)

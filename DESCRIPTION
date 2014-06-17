@@ -1,9 +1,19 @@
-Package: diffcoef
-Title: What the package does (short line)
+Package: DispersionCalculator
+Title: Dispersion rate calculator for 3D open channels.
 Version: 0.1
 Authors@R: "Matthew Plourde <plourde.m@gmail.com> [aut, cre]"
-Description: What the package does (paragraph)
+Description: Calculates the concentration weighted average second
+    moments and corresponding dispersion rates for the x, y, and z
+    directions in an open channel water body.
 Depends:
     R (>= 3.1.0)
+Imports:
+    reshape2,
+    ggplot2,
+    RColorBrewer,
+    grid,
+    shiny,
+    zoo,
+    roow
 License: GPL
 LazyData: true
