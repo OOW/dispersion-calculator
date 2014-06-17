@@ -18,7 +18,7 @@ Load *devtools*, and install this repository and one of its dependencies, *roow*
 ```r
 library(devtools)
 install_github('roow', 'oow')
-install_github('difcoef', 'oow')
+install_github('dispersion-calculator', 'oow')
 ```
 
 Load and launch *DispersionCalculator*:
