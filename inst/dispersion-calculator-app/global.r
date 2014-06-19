@@ -205,6 +205,7 @@ getSecondMoments <- function(dye.path, dxdy.inp.path, depth.path, start.datetime
     end.datetime <- start.datetime + as.difftime(hours, units='hours')
     # get the indexes that correspond to the desired time frame
     timestamp.idxs <- which(timestamps >= start.datetime & timestamps <= end.datetime)
+
     # subset the dye data to the desired timeframe
     dye.list.raw <- dye.list.raw[timestamp.idxs]
 

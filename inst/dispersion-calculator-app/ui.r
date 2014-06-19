@@ -6,7 +6,8 @@ shinyUI(pageWithSidebar(
         fileInput('depth_input', strong('Depth input (*.asc)'))
     ),
     wellPanel(
-        datetimeInput('start_datetime', strong('Start time'), min='1/1/2010', max=format(Sys.Date(), '%m/%d/%Y')),
+        #datetimeInput('start_datetime', strong('Start time'), min='1/1/2010', max=format(Sys.Date(), '%m/%d/%Y')),
+        datetimeInput('start_datetime', strong('Start time'), min='1/1/2010'),
         numericInput('duration', strong('Duration (hours)'), value=2, min=2),
         actionButton('submit', strong('Submit'))
     ),
