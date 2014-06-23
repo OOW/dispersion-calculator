@@ -298,7 +298,7 @@ getSecondMoments <- function(dye.path, dxdy.inp.path, depth.path, start.datetime
 #' @param moment2.by.time List of three entries, the second moment time series for each axis
 #' @param duration the number of hours 
 make.plot <- function(moment2.by.time, start.datetime, end.datetime) {
-    hour.range <- seq(as.integer(end.datetime - start.datetime, units='hours'))
+    hour.range <- seq(as.integer(as.numeric(end.datetime - start.datetime, units='hours')))
     # calculate the dispersion coefficient for each axis as the slope between the first second moment
     # and the last second moment, scale by seconds
     secs.in.hr <- 3600
