@@ -1,0 +1,131 @@
+---
+title: "DispersionCalculator v0.1 Memo"
+output: html_document
+---
+
+This document explains DispersionCalculator's method for estimating dispersion coefficients.
+
+## Input files
+
+The calculator requires three input files:
+
+##### Dxdy input
+Each row in this file corresponds to a cell in the two dimensional XY grid of the water body. The first two columns contain the integer pairs that index the 2D cells and the other two columns contain the cell dimensions.
+
+##### Dye input
+This file contains the concentrations for each cell in the three dimensional grid space of the water body at every timestep. The timestep blocks are delimited by single column rows that specify the timestep in julian days. Each row within a timestep block defines the concentrations along the Z direction for a cell in the two dimensional XY grid. The order of the rows matches the order of the rows in the Dxdy input file. In the three dimensional grid, the space above an XY cell divides into 5 cells, so for each row, there are five columns.
+
+##### Depth input
+This file indicates the water level above each XY cell and follows the same format as as the Dye input file. The first column of a timestep block indicates the water level and the second column indicates the adjustment factor.
+
+## Reformatting the data
+
+After loading the input files, **DispersionCalculator** reformats the data into an axis-neutral format so that we can call a single, generalized function (`getAxisSecondMoments`) on the data to compute the centralized second moments at each timestep along any of the three axes.
+
+The three axis-netural datasets that pass to `getAxisSecondMoments` are `delta.list.raw`, `dye.list.raw`, and `coor.list.raw`. Each element in these lists represents the data for one timestep. A timestep element in `delta.list.raw` is a table with six columns: x, y, z, dx, dy, dz. Each row represents one cell in the three dimensional grid. The x and y values are the XY grid indexes from the Dxdy input file and the Z cells are indexed one through five. A timestep in `dye.list.raw` has four columns: x, y, z, and dye. The x, y, and z columns contain the indexes and the dye column contains the dye concentrations. `coor.list.raw` has six columns: x, y, z, xcoor, ycoor, zcoor. The xcoor, ycoor, and zcoor are the representative coordinates in meters for each three dimensional grid cell. The program calculates the XY coordinates from the delta XY data after selecting one of the cells to be the origin. It calculates the Z coordinates above each XY cell by dividing its depth data by five.
+
+After subsetting for the desired time frame, `getAxisSecondMoments` takes these "raw" datasets and the name of the axis for which it should calculate the average centralized second moments. It then pivots the timestep elements in each of these lists so that the first two columns contain the index coordinates of the other two axes, and the remaining columns correspond to each unique index value in the desired axis. For instance, if z were the axis along which `getAxisSecondMoments` is to compute the average second moments, it will reformat each timestep element in `dye.list.raw` so that it has columns x, y, 1, 2, 3, 4, and 5, since the Z axis has 5 indexes. If the desired axis were x, then it would be reformatted so that the columns are y, z, n, ..., m, where n and m are the lowsest and highest indexes on the X axis, respectively. Finally, the function will then collapse these lists of reformatted data into three three-dimensional arrays.
+
+For the remainder of this document, we'll use Z as the example axis for which we are calculating the average centralized second moments, but the formulas and code presented generalize to the other axes by simply swaping the variable names.
+
+## Performing the calculations
+
+Because the following calculations require us to estimate areas under the coordinate curves, it's necessary to convert the coordinate values of the desired axis to their absolute values. In the case of the Z axis, this isn't necessary, since all of the Z coordinates are positive. But for the X and Y directions, we define an arbitrary origin for the X and Y coordinates, and there will be negative values.
+
+Let $\mathcal{X}$, $\mathcal{Y}$, and $\mathcal{Z}$ be the sets of grid cell indexes. We first esimate the areas under the concentrations curve in the direction of the desired axis using Riemann sums. (This esimate could be improved in the future by using more sophisicated numerical integration techniques). 
+
+$$
+C_{ij}(t) = \sum_{k=min(\mathcal{Z})}^{max(\mathcal{Z})} c_{ijk}(t) \Delta z_{ijk}(t)
+$$ 
+
+where
+
+* $c_{ijk}(t)$ is the concentration for the grid cell indexed by $(i,j,k)$ at timestep $t$
+
+* $\Delta z_{ijk}(t)$ is z-dimension for the cell indexed by $(i,j,k)$ at timestep $t$
+
+* $C_{ij}(t)$ is the esimated integral of $c_{ijk}(t)$ along the Z direction
+
+
+In R, We do this calculation simultaneously for all timesteps using the following array operations:
+
+```
+cz.dz <- cz * dz
+int.cz.dz <- apply(cz.dz, c(1,3), sum, na.rm=TRUE)
+
+```
+
+Where 
+
+* `cz` is a 3D array of concentrations. The rows correspond to the XY index pairs, the columns correspond to the cells along the Z direction, and the slices correspond to the timesteps.
+
+* `dz` is a 3D array of z-direction dimensions with the same sturcture as `cz`
+
+Next we esimate the first moments of the concentration curves along the desired axis using the formula: 
+
+$$
+z^{\prime}_{ij}(t) = \frac{\sum_{k=min(\mathcal{Z})}^{max(\mathcal{Z})} z_{ijk}(t) c_{ijk}(t) \Delta z_{ijk}(t)}{C_{ij}(t)}
+$$
+
+where 
+
+* $z_{ijk}(t)$ is the representative coordinate at timestep $t$ for the grid cell indexed by $(i,j,k)$
+
+* $z^{\prime}_{ij}(t)$ is the first concentration moment at time $t$ above the grid cell indexed in the XY-plane by $(i,j)$
+
+
+Again, we accomplish this in R using array operations:
+
+```
+z.cz.dz <- z * cz.dz
+int.z.cz.dz <- apply(z.cz.dz, c(1,3), sum, na.rm=TRUE)
+moment1 <- int.z.cz.dz / int.cz.dz
+
+```
+
+Now we can estimate the centralized second moment using the formula
+
+$$
+z^{\prime\prime}_{ij}(t) = \frac{\sum_{k=min(\mathcal{Z})}^{max(\mathcal{Z})} z_{ijk}^2(t) c_{ijk}(t) \Delta z_{ijk}(t)}{C_{ij}(t)} - z^{\prime 2}_{ij}(t)
+$$
+
+Which in R we accomplish with
+
+```
+z2.cz.dz <- z^2 * cz.dz
+int.z.cz.dz <- apply(z.cz.dz, c(1,3), sum, na.rm=TRUE)
+moment2 <- int.z2.cz.dz / int.cz.dz - moment1^2
+```
+
+Next, we calculate the concentration-averaged centralized second moments at each timestep over the plane formed by the other two axes.
+
+$$
+z^{\prime\prime}_{mean}(t) = \frac{\sum_{i=min(\mathcal{X})}^{max(\mathcal{X})}\sum_{j=min(\mathcal{Y})}^{max(\mathcal{Y})} z^{\prime\prime}_{ij}(t) C_{ij}(t) \overline{\delta_{ij}}(t)}{\sum_{i=min(\mathcal{X})}^{max(\mathcal{X})}\sum_{j=min(\mathcal{Y})}^{max(\mathcal{Y})} C_{ij}(t) \overline{\delta_{ij}}(t)}
+$$
+
+
+where
+
+$$
+\overline{\delta_{ij}}(t) = \frac{\sum_{k=min(\mathcal{Z})}^{max(\mathcal{Z})} x_{ijk}(t) y_{ijk}(t)}{|\mathcal{Z}_{ij}|}
+$$
+
+and $\mathcal{Z}_{ij}$ is the set of indexes $k \in \mathcal{Z}$  such that there exists a grid cell indexed by $(i, j, k)$.
+
+Here, $\overline{\delta_{ij}}(t)$ is simply equal to $x_i y_j$, because for a given $(i, j)$,
+the area of the grid cell indexed by $(i,j,k)$ is not dependent on $k$. When the calculation is over the x or y direction, however, this is not true, because the water level varies with $i$ and $j$, and hence so do the z dimensions of the grid cells.  Therefore, it's necessary to use $\overline{\delta_{jk}}(t)$ and $\overline{\delta_{ik}}(t)$ to average the grid cell areas over the desired direction.
+
+In R, we perform this calculation with
+
+```
+Cxy.dxdy <- int.cz.dz * apply(dxdy, c(1,3), mean, na.rm=TRUE)
+dint.Cxy.dxdy <- apply(Cxy.dxdy, 2, sum, na.rm=TRUE)
+```
+where
+
+* `dxdy` is a 3D array of the products of dimensions of the other two axes, where the rows correspond to XY-plane index pairs, the columns correspond to the unique Z direction indexes, and the slices, the timesteps.
+
+Finally, the we estimate the dispersion rate for the desired axis as one half of the slope of the line that best fits the weighted average centralized second moments at each timestep. 
+
+
+

@@ -303,7 +303,11 @@ make.plot <- function(moment2.by.time, start.datetime, end.datetime) {
     # and the last second moment, scale by seconds
     secs.in.hr <- 3600
     Ks <- lapply(moment2.by.time, function(axis) {
-        (.5 * ((tail(axis, 1) - head(axis, 1)) / (tail(hour.range, 1) - head(hour.range, 1)))) / secs.in.hr
+        # old method, slope from first and last data point
+        #(.5 * ((tail(axis, 1) - head(axis, 1)) / (tail(hour.range, 1) - head(hour.range, 1)))) / secs.in.hr
+        d <- data.frame(x=seq_along(axis), y=axis)
+        mod <- lm(y ~ x, d)
+        .5 * coef(mod)[[2]] / secs.in.hr
     })
     # for each axis, add a timeseries column and scale the second moments by the standard deviation. The second 
     # moments are scaled so that they can be plotted
@@ -317,6 +321,7 @@ make.plot <- function(moment2.by.time, start.datetime, end.datetime) {
     # make the plot
     date.range <- paste(format(start.datetime, '%m/%d/%Y %H:%M'), '--', format(end.datetime, '%m/%d/%Y %H:%M'))
     p <- ggplot(data=full.tab.raw, aes(x=timestep_hour, y=avg.second.moment)) + geom_point() + geom_line() + 
+        stat_smooth(method='lm', se=FALSE) +
         facet_wrap(~ axis, ncol=1, scales='free_y') + 
         labs(title=bquote(atop(.(date.range), 
                    paste(list(K[x]==.(round(Ks[[1]], 2)), K[y]==.(round(Ks[[2]], 2)), K[z]==.(round(Ks[[3]], 8))), ~~(frac(m^2, s))))),

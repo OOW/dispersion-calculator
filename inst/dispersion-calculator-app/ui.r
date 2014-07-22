@@ -1,5 +1,5 @@
 shinyUI(pageWithSidebar(
-    headerPanel('DispersionCalculator v0.1'),
+    headerPanel('DispersionCalculator v0.2'),
     sidebarPanel(wellPanel(
         fileInput('dye_input', strong('Dye input (*.asc)')),
         fileInput('dxdy_input', strong('Dxdy input (*.inp)')),
