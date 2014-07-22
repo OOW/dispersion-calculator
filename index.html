@@ -77,13 +77,13 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <h3>Preparing the data</h3>
 <p>After loading the input files, <strong>DispersionCalculator</strong> reformats the data into an axis-neutral format so that we can call a single, generalized function (<code>getAxisSecondMoments</code>) on the data to compute the centralized second moments at each timestep along any of the three axes.</p>
 <p>The three axis-netural datasets that pass to <code>getAxisSecondMoments</code> are <code>delta.list.raw</code>, <code>dye.list.raw</code>, and <code>coor.list.raw</code>. Each element in these lists represents the data for one timestep. A timestep element in <code>delta.list.raw</code> is a table with six columns: x, y, z, dx, dy, dz. Each row represents one cell in the three dimensional grid. The x and y values are the XY grid indexes from the Dxdy input file and the Z cells are indexed one through five. A timestep in <code>dye.list.raw</code> has four columns: x, y, z, and dye. The x, y, and z columns contain the indexes and the dye column contains the dye concentrations. <code>coor.list.raw</code> has six columns: x, y, z, xcoor, ycoor, zcoor. The xcoor, ycoor, and zcoor are the representative coordinates in meters for each three dimensional grid cell. The program calculates the XY coordinates from the delta XY data after selecting one of the cells to be the origin. It calculates the Z coordinates above each XY cell by dividing its depth data by five.</p>
-<p>After subsetting for the desired time frame, <code>getAxisSecondMoments</code> takes these “raw” datasets and the name of the axis for which it should calculate the average centralized second moments. It then pivots the timestep elements in each of these lists so that the first two columns contain the index coordinates of the other two axes, and the remaining columns correspond to each unique index value in the desired axis. For instance, if z were the axis along which <code>getAxisSecondMoments</code> is to compute the average second moments, it will reformat each timestep element in <code>dye.list.raw</code> so that it has columns x, y, 1, 2, 3, 4, and 5, since the Z axis has 5 indexes. If the desired axis were x, then it would be reformatted so that the columns are y, z, n, …, m, where n and m are the lowsest and highest indexes on the X axis, respectively. Finally, the function will then collapse these lists of reformatted data into three three-dimensional arrays.</p>
-<p>For the remainder of this document, we’ll use Z as the example axis for which we are calculating the average centralized second moments, but the formulas and code presented generalize to the other axes by simply swaping the variable names.</p>
+<p>After subsetting for the desired time frame, <code>getAxisSecondMoments</code> takes these “raw” datasets and the name of the axis for which it should calculate the average centralized second moments. It then pivots the timestep elements in each of these lists so that the first two columns contain the index coordinates of the other two axes, and the remaining columns correspond to each unique index value in the desired axis. For instance, if z were the axis along which <code>getAxisSecondMoments</code> is to compute the average second moments, it will reformat each timestep element in <code>dye.list.raw</code> so that it has columns x, y, 1, 2, 3, 4, and 5, since the Z axis has 5 indexes. If the desired axis were x, then it would be reformatted so that the columns are y, z, n, …, m, where n and m are the lowest and highest indexes on the X axis, respectively. Finally, the function will then collapse these lists of reformatted data into three three-dimensional arrays.</p>
+<p>For the remainder of this document, we’ll use Z as the example axis for which we are calculating the average centralized second moments, but the formulas and code presented generalize to the other axes by simply swapping the variable names.</p>
 </div>
-<div id="estimating-disperion-rates" class="section level3">
-<h3>Estimating disperion rates</h3>
+<div id="estimating-dispersion-rates" class="section level3">
+<h3>Estimating dispersion rates</h3>
 <p>Because the following calculations require us to estimate areas under the coordinate curves, it’s necessary to convert the coordinate values of the desired axis to their absolute values. In the case of the Z axis, this isn’t necessary, since all of the Z coordinates are positive. But for the X and Y directions, we define an arbitrary origin for the X and Y coordinates, and there will be negative values.</p>
-<p>Let <span class="math">\(\mathcal{X}\)</span>, <span class="math">\(\mathcal{Y}\)</span>, and <span class="math">\(\mathcal{Z}\)</span> be the sets of grid cell indexes. We first esimate the areas under the concentrations curve in the direction of the desired axis using Riemann sums. (This esimate could be improved in the future by using more sophisicated numerical integration techniques).</p>
+<p>Let <span class="math">\(\mathcal{X}\)</span>, <span class="math">\(\mathcal{Y}\)</span>, and <span class="math">\(\mathcal{Z}\)</span> be the sets of grid cell indexes. We first estimate the areas under the concentrations curve in the direction of the desired axis using Riemann sums. (This estimate could be improved in the future by using more sophisticated numerical integration techniques).</p>
 <p><span class="math">\[
 C_{ij}(t) = \sum_{k \in \mathcal{Z}} c_{ijk}(t) \Delta z_{ijk}(t)
 \]</span></p>
@@ -91,7 +91,7 @@ C_{ij}(t) = \sum_{k \in \mathcal{Z}} c_{ijk}(t) \Delta z_{ijk}(t)
 <ul>
 <li><p><span class="math">\(c_{ijk}(t)\)</span> is the concentration for the grid cell indexed by <span class="math">\((i,j,k)\)</span> at timestep <span class="math">\(t\)</span></p></li>
 <li><p><span class="math">\(\Delta z_{ijk}(t)\)</span> is z-dimension for the cell indexed by <span class="math">\((i,j,k)\)</span> at timestep <span class="math">\(t\)</span></p></li>
-<li><p><span class="math">\(C_{ij}(t)\)</span> is the esimated integral of <span class="math">\(c_{ijk}(t)\)</span> along the Z direction</p></li>
+<li><p><span class="math">\(C_{ij}(t)\)</span> is the estimated integral of <span class="math">\(c_{ijk}(t)\)</span> along the Z direction</p></li>
 </ul>
 <p>In R, we perform this calculation simultaneously for all timesteps using the following array operations:</p>
 <pre><code>cz.dz &lt;- cz * dz
@@ -100,9 +100,9 @@ int.cz.dz &lt;- apply(cz.dz, c(1,3), sum, na.rm=TRUE)
 <p>Where</p>
 <ul>
 <li><p><code>cz</code> is a 3D array of concentrations. The rows correspond to the XY index pairs, the columns correspond to the cells along the Z direction, and the slices correspond to the timesteps.</p></li>
-<li><p><code>dz</code> is a 3D array of z-direction dimensions with the same sturcture as <code>cz</code></p></li>
+<li><p><code>dz</code> is a 3D array of z-direction dimensions with the same structure as <code>cz</code></p></li>
 </ul>
-<p>Next we esimate the first moments of the concentration curves along the desired axis using the formula:</p>
+<p>Next we estimate the first moments of the concentration curves along the desired axis using the formula:</p>
 <p><span class="math">\[
 z^{\prime}_{ij}(t) = \frac{\sum_{k \in \mathcal{Z}} z_{ijk}(t) c_{ijk}(t) \Delta z_{ijk}(t)}{C_{ij}(t)}
 \]</span></p>
