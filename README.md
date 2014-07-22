@@ -1,7 +1,7 @@
 DispersionCalculator
 ================================
 Calculates the concentration weighted average second moments and corresponding dispersion rates
-for the x, y, and z directions in an open channel water body.
+for the x, y, and z directions in an open channel water body. For a detailed explation of the methodology, please visit the [project homepage](http://oow.github.io/dispersion-calculator/).
 
 Installation and Usage
 ================================
@@ -35,4 +35,3 @@ in the file inst/dispersion-calculator-app/global.r. The function `getSecondMome
 average second moments for each axis. The function `make.plot` takes these average second moments, calculates
 their corresponding dispersion rates, then outputs the plot.
 
-For a detailed explation of the methodology, please visit the [project homepage](http://oow.github.io/dispersion-calculator/).
