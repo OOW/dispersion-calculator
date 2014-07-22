@@ -1,11 +1,11 @@
 ---
-title: "DispersionCalculator v0.1 Memo"
+title: "DispersionCalculator v0.2"
 output: html_document
 ---
 
 This document explains DispersionCalculator's method for estimating dispersion coefficients.
 
-## Input files
+### Input files
 
 The calculator requires three input files:
 
@@ -18,7 +18,7 @@ This file contains the concentrations for each cell in the three dimensional gri
 ##### Depth input
 This file indicates the water level above each XY cell and follows the same format as as the Dye input file. The first column of a timestep block indicates the water level and the second column indicates the adjustment factor.
 
-## Reformatting the data
+### Preparing the data
 
 After loading the input files, **DispersionCalculator** reformats the data into an axis-neutral format so that we can call a single, generalized function (`getAxisSecondMoments`) on the data to compute the centralized second moments at each timestep along any of the three axes.
 
@@ -28,14 +28,14 @@ After subsetting for the desired time frame, `getAxisSecondMoments` takes these 
 
 For the remainder of this document, we'll use Z as the example axis for which we are calculating the average centralized second moments, but the formulas and code presented generalize to the other axes by simply swaping the variable names.
 
-## Performing the calculations
+### Estimating disperion rates
 
 Because the following calculations require us to estimate areas under the coordinate curves, it's necessary to convert the coordinate values of the desired axis to their absolute values. In the case of the Z axis, this isn't necessary, since all of the Z coordinates are positive. But for the X and Y directions, we define an arbitrary origin for the X and Y coordinates, and there will be negative values.
 
 Let $\mathcal{X}$, $\mathcal{Y}$, and $\mathcal{Z}$ be the sets of grid cell indexes. We first esimate the areas under the concentrations curve in the direction of the desired axis using Riemann sums. (This esimate could be improved in the future by using more sophisicated numerical integration techniques). 
 
 $$
-C_{ij}(t) = \sum_{k=min(\mathcal{Z})}^{max(\mathcal{Z})} c_{ijk}(t) \Delta z_{ijk}(t)
+C_{ij}(t) = \sum_{k \in \mathcal{Z}} c_{ijk}(t) \Delta z_{ijk}(t)
 $$ 
 
 where
@@ -47,7 +47,7 @@ where
 * $C_{ij}(t)$ is the esimated integral of $c_{ijk}(t)$ along the Z direction
 
 
-In R, We do this calculation simultaneously for all timesteps using the following array operations:
+In R, we perform this calculation simultaneously for all timesteps using the following array operations:
 
 ```
 cz.dz <- cz * dz
@@ -64,7 +64,7 @@ Where
 Next we esimate the first moments of the concentration curves along the desired axis using the formula: 
 
 $$
-z^{\prime}_{ij}(t) = \frac{\sum_{k=min(\mathcal{Z})}^{max(\mathcal{Z})} z_{ijk}(t) c_{ijk}(t) \Delta z_{ijk}(t)}{C_{ij}(t)}
+z^{\prime}_{ij}(t) = \frac{\sum_{k \in \mathcal{Z}} z_{ijk}(t) c_{ijk}(t) \Delta z_{ijk}(t)}{C_{ij}(t)}
 $$
 
 where 
@@ -86,7 +86,7 @@ moment1 <- int.z.cz.dz / int.cz.dz
 Now we can estimate the centralized second moment using the formula
 
 $$
-z^{\prime\prime}_{ij}(t) = \frac{\sum_{k=min(\mathcal{Z})}^{max(\mathcal{Z})} z_{ijk}^2(t) c_{ijk}(t) \Delta z_{ijk}(t)}{C_{ij}(t)} - z^{\prime 2}_{ij}(t)
+z^{\prime\prime}_{ij}(t) = \frac{\sum_{k \in \mathcal{Z}} z_{ijk}^2(t) c_{ijk}(t) \Delta z_{ijk}(t)}{C_{ij}(t)} - z^{\prime 2}_{ij}(t)
 $$
 
 Which in R we accomplish with
@@ -97,17 +97,17 @@ int.z.cz.dz <- apply(z.cz.dz, c(1,3), sum, na.rm=TRUE)
 moment2 <- int.z2.cz.dz / int.cz.dz - moment1^2
 ```
 
-Next, we calculate the concentration-averaged centralized second moments at each timestep over the plane formed by the other two axes.
+Next, we calculate the concentration-weighted average centralized second moments at each timestep over the plane formed by the other two axes.
 
 $$
-z^{\prime\prime}_{mean}(t) = \frac{\sum_{i=min(\mathcal{X})}^{max(\mathcal{X})}\sum_{j=min(\mathcal{Y})}^{max(\mathcal{Y})} z^{\prime\prime}_{ij}(t) C_{ij}(t) \overline{\delta_{ij}}(t)}{\sum_{i=min(\mathcal{X})}^{max(\mathcal{X})}\sum_{j=min(\mathcal{Y})}^{max(\mathcal{Y})} C_{ij}(t) \overline{\delta_{ij}}(t)}
+z^{\prime\prime}_{mean}(t) = \frac{\sum_{i \in \mathcal{X}} \sum_{j \in \mathcal{Y}} z^{\prime\prime}_{ij}(t) C_{ij}(t) \overline{\delta_{ij}}(t)}{\sum_{i \in \mathcal{X}} \sum_{j \in \mathcal{Y}} C_{ij}(t) \overline{\delta_{ij}}(t)}
 $$
 
 
 where
 
 $$
-\overline{\delta_{ij}}(t) = \frac{\sum_{k=min(\mathcal{Z})}^{max(\mathcal{Z})} x_{ijk}(t) y_{ijk}(t)}{|\mathcal{Z}_{ij}|}
+\overline{\delta_{ij}}(t) = \frac{\sum_{k \in \mathcal{Z}} x_{ijk}(t) y_{ijk}(t)}{|\mathcal{Z}_{ij}|}
 $$
 
 and $\mathcal{Z}_{ij}$ is the set of indexes $k \in \mathcal{Z}$  such that there exists a grid cell indexed by $(i, j, k)$.
