@@ -35,14 +35,14 @@ Because the following calculations require us to estimate areas under the coordi
 Let $\mathcal{X}$, $\mathcal{Y}$, and $\mathcal{Z}$ be the sets of grid cell indexes. We first estimate the areas under the concentrations curve in the direction of the desired axis using Riemann sums. (This estimate could be improved in the future by using more sophisticated numerical integration techniques). 
 
 $$
-C_{ij}(t) = \sum_{k \in \mathcal{Z}} c_{ijk}(t) \Delta z_{ijk}(t)
+C_{ij}(t) = \sum_{k \in \mathcal{Z}} c_{ijk}(t) \delta z_{ijk}(t)
 $$ 
 
 where
 
 * $c_{ijk}(t)$ is the concentration for the grid cell indexed by $(i,j,k)$ at timestep $t$
 
-* $\Delta z_{ijk}(t)$ is z-dimension for the cell indexed by $(i,j,k)$ at timestep $t$
+* $\delta z_{ijk}(t)$ is z-dimension for the cell indexed by $(i,j,k)$ at timestep $t$
 
 * $C_{ij}(t)$ is the estimated integral of $c_{ijk}(t)$ along the Z direction
 
@@ -64,7 +64,7 @@ Where
 Next we estimate the first moments of the concentration curves along the desired axis using the formula: 
 
 $$
-z^{\prime}_{ij}(t) = \frac{\sum_{k \in \mathcal{Z}} z_{ijk}(t) c_{ijk}(t) \Delta z_{ijk}(t)}{C_{ij}(t)}
+z^{\prime}_{ij}(t) = \frac{\sum_{k \in \mathcal{Z}} z_{ijk}(t) c_{ijk}(t) \delta z_{ijk}(t)}{C_{ij}(t)}
 $$
 
 where 
@@ -86,7 +86,7 @@ moment1 <- int.z.cz.dz / int.cz.dz
 Now we can estimate the centralized second moment using the formula
 
 $$
-z^{\prime\prime}_{ij}(t) = \frac{\sum_{k \in \mathcal{Z}} z_{ijk}^2(t) c_{ijk}(t) \Delta z_{ijk}(t)}{C_{ij}(t)} - z^{\prime 2}_{ij}(t)
+z^{\prime\prime}_{ij}(t) = \frac{\sum_{k \in \mathcal{Z}} z_{ijk}^2(t) c_{ijk}(t) \delta z_{ijk}(t)}{C_{ij}(t)} - z^{\prime 2}_{ij}(t)
 $$
 
 Which in R we accomplish with
@@ -112,7 +112,106 @@ $$
 
 and $\mathcal{Z}_{ij}$ is the set of indexes $k \in \mathcal{Z}$  such that there exists a grid cell indexed by $(i, j, k)$.
 
-Here, $\overline{\delta_{ij}}(t)$ is simply equal to $x_i y_j$, because for a given $(i, j)$, the area of the grid cell indexed by $(i,j,k)$ is not dependent on $k$. When the calculation is over the x or y direction, however, this is not true, because the water level varies with $i$ and $j$, and hence so do the z dimensions of the grid cells.  Therefore, it's necessary to use $\overline{\delta_{jk}}(t)$ and $\overline{\delta_{ik}}(t)$ to average the grid cell areas over the desired direction.
+Here, $\overline{\delta_{ij}}(t)$ is simply equal to $\delta x_{ij} \cdot \delta y_{ij}$, because for a given $(i, j)$, the area of the grid cell indexed by $(i,j,k)$ is not dependent on $k$. However, this simplification does not hold when we peform the calculation with respect to the x or y direction, because the water level varies with $i$ and $j$, and hence so do the z dimensions of the grid cells.  Therefore, it's necessary to use $\overline{\delta_{jk}}(t)$ and $\overline{\delta_{ik}}(t)$ to average the grid cell areas for these axes. Below is a figure illustrationg this complication for a simplified example with only two axes.
+
+```{r fig, echo=FALSE, fig.width=5, fig.height=5, fig.align='center'}
+
+library(RColorBrewer)
+library(grid)
+
+grid.newpage()
+root.layout <- grid.layout(nrow=2, ncol=2, widths=unit(c(.2, .8), 'npc'), heights=unit(c(.2, .8), 'npc'))
+pushViewport(viewport(height=.6, width=.95, layout=root.layout, name='root'))
+
+n.grid.cols <- 6
+pushViewport(viewport(layout=grid.layout(ncol=n.grid.cols, nrow=1), layout.pos.row=2, layout.pos.col=2))
+
+cols <- seq.int(1, n.grid.cols)
+side2.sizes <- seq.int(from=4, by=2, length.out=length(cols)/2) + 1
+side1.sizes <- rev(side2.sizes)
+sizes <- c(side1.sizes, side2.sizes)
+
+#set.seed(100)
+#column.cols <- sample(rainbow(n.grid.cols, v=.75, s=.5), n.grid.cols)
+#level.colors <- brewer.pal(5, 'Pastel2')
+level.colors <- colorRampPalette(c('blue4', 'aquamarine'))(5)
+grid.rect(gp=gpar(fill='burlywood4'))
+spline.y.coords <- Map(function(col, size) {
+    pushViewport(viewport(layout.pos.row=1, layout.pos.col=col))
+    ys <- tail(cumsum(rep(1/size, size)) - 1/(2*size), 5)
+    #grid.rect(y=unit(ys, 'npc'), height=1/size, gp=gpar(fill=level.cols, col=column.cols[col], lwd=3))
+    grid.rect(y=unit(ys, 'npc'), height=1/size, gp=gpar(lwd=2, fill=level.colors, col='black'))
+    popViewport()
+    ys
+}, cols, sizes)
+spline.y.coords <- as.list(as.data.frame(do.call(rbind, spline.y.coords)))
+spline.x.coords <- (cumsum(rep(1/n.grid.cols, n.grid.cols)) - 1/(2*n.grid.cols))[cols]
+
+for (i in seq_along(spline.y.coords)) {
+    y.coords <- spline.y.coords[[i]]
+    #color <- level.colors[i]
+    grid.xspline(c(-.02, spline.x.coords), c(y.coords[1], y.coords), gp=gpar(lwd=1, lty='dotted'))
+}
+
+vline.ys <- as.vector(rbind(rep(1.07, length(spline.x.coords)), spline.y.coords[[1]]))
+vline.xs <- rep(spline.x.coords, each=2)
+vline.ids <- rep(seq_along(spline.x.coords), each=2)
+grid.polyline(vline.xs, vline.ys, id=vline.ids, gp=gpar(lty='dashed'))
+
+popViewport()
+pushViewport(viewport(layout.pos.row=2, layout.pos.col=1))
+
+left.ys <- cumsum(rep(1/5, 5)) - (1/(2 * 5))
+left.xs <- rep(.8, 5)
+
+farleft.xs <- left.xs - .05
+farleft.ys <- left.ys
+
+right.ys <- as.data.frame(do.call(rbind, spline.y.coords))[[1]]
+right.xs <- rep(.9, 5)
+
+xs <- as.vector(rbind(farleft.xs, left.xs, right.xs))
+ys <- as.vector(rbind(farleft.ys, left.ys, right.ys))
+
+ids <- rep(1:5, each=3)
+
+grid.polyline(xs, ys, ids, gp=gpar(lty='dashed'))
+
+pushViewport(viewport(width=.6, height=1))
+grid.polyline(x=c(0,.8, .8, .8), y=c(0,0,0,1), id=c(1,1,2,2), gp=gpar(lwd=2, lty=c('solid', 'dotted'), col=c('black', 'grey')))
+
+grid.text('?', x=rep(.7, 5), y=farleft.ys, gp=gpar(cex=.7))
+grid.text('x concentrations', x=.4, y=-.04, gp=gpar(cex=.8))
+
+point.coords <- c(.6, .4, .2, .4, .6)-.2 
+point.gp <- gpar(cex=.5, fill='red')
+grid.points(x=point.coords, y=farleft.ys, gp=point.gp, pch=21)
+
+popViewport(2)
+pushViewport(viewport(layout.pos.row=1, layout.pos.col=2))
+
+pushViewport(viewport(height=.6, width=1))
+grid.polyline(x=c(-0.02, -.02, -.02, 1), y=c(1, 0, 0, 0), id=c(1,1,2,2), gp=gpar(lwd=2))
+
+point.ys <- 1-(c(.6, .4, 0, 0, .4, .6)-.2)
+point.xs <- vline.xs[seq_along(vline.xs) %% 2 == 0]
+grid.rect(x=point.xs, y=point.ys/2, height=point.ys, width=1/6)
+grid.points(x=point.xs, y=point.ys, gp=point.gp, pch=21)
+grid.xspline(point.xs, point.ys, gp=gpar(lwd=2))
+
+
+popViewport(2)
+
+pushViewport(viewport(layout.pos.row=1, layout.pos.col=1))
+pushViewport(viewport(x=.8, width=.5, angle=90))
+grid.text('z concentrations', x=1, gp=gpar(cex=.8))
+
+popViewport(2)
+
+```
+
+This figure shows a 2D transect of the waterbody. The top chart contains the vertically integrated concentrations. We can estimate the integral for the curve outlined by these points with Riemann sums using the fixed x dimensions for each vertical column. The chart on the left shows the horizontally integrated concentrations. Because there is no fixed height for each z-level, we have to peform a simplifying operation to arrive at z-dimensions with which we can estimate the integral. Currently, our method is equivalent to fixing the z dimension at each level as the mean of all the z-dimensions at that level. An alternative to this would be to interpolate the vertical concentrations and sample the interpolations at regular intervals.
+
 
 In R, we perform this calculation with
 
