@@ -21,6 +21,16 @@ install_github('roow', 'oow')
 install_github('dispersion-calculator', 'oow')
 ```
 
+If `install_github` still fails, [download](https://github.com/OOW/dispersion-calculator/archive/master.zip) a zipfile of this repository from github and follow these steps.
+
+1.  Extract the zipfile and browse to the directory in this repository containing the inst folder.
+2.  Open R and set your working directory to this directory.
+3.  load devtools: `library(devtools)`
+4.  Turn on support for your webproxy, if necessary: `setInternet2()`
+5.  Set your CRAN repository: `options(repos=list(CRAN="http://cran.us.r-project.org"))`
+6.  Install **dispersion-calculator**: `install()`
+
+
 Load and launch *DispersionCalculator*:
 
 ```r
