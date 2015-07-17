@@ -14,6 +14,6 @@ Imports:
     grid,
     shiny,
     zoo,
-    roow
+    htmltools
 License: MIT
 LazyData: true

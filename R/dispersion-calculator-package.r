@@ -2,7 +2,7 @@
 #'
 #' @name DispersionCalculator
 #' @docType package
-#' @import reshape2 ggplot2 RColorBrewer grid shiny zoo roow
+#' @import reshape2 ggplot2 RColorBrewer grid shiny zoo htmltools
 
 library(shiny)
 

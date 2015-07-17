@@ -32,11 +32,11 @@ datetimeInput <- function(inputId, label, value=NULL, min=NULL, max=NULL) {
     #min <- validate.datetime.input(min)
     #max <- validate.datetime.input(max)
 
-    dep2 <- htmlDependency('datetime_Input2', "1", c(href='bigpicture'), 
+    dep2 <- htmltools::htmlDependency('datetime_Input2', "1", c(href='DispersionCalculator'), 
         script='jquery.datetimepicker.js',
         stylesheet='jquery.datetimepicker.css')
 
-    dep3 <- htmlDependency('datetime_Input3', "1", c(href='bigpicture'), 
+    dep3 <- htmltools::htmlDependency('datetime_Input3', "1", c(href='DispersionCalculator'), 
         script='timepicker/timepicker_bindings.js')
 
     attachDependencies(

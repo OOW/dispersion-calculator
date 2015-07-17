@@ -4,7 +4,6 @@ library(RColorBrewer)
 library(grid)
 library(shiny)
 library(zoo)
-library(roow)
 
 # turn off daylight savings time
 Sys.setenv(TZ='EST')
