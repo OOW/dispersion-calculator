@@ -13,12 +13,13 @@ options(repos=c(CRAN='http://cran.us.r-project.org')) # set your repository
 install.packages('devtools')
 ```
 
-Load *devtools*, and install this repository and one of its dependencies, *roow*.
+Load *devtools*, and install this repository.
 
 ```r
 library(devtools)
-install_github('roow', 'oow')
-install_github('dispersion-calculator', 'oow')
+# set proxy, if necessary
+# set_config(httr::use_proxy(url="webproxy.phila.gov", port=8080))
+install_github('OOW/dispersion-calculator')
 ```
 
 If `install_github` still fails, [download](https://github.com/OOW/dispersion-calculator/archive/master.zip) a zipfile of this repository from github and follow these steps.
