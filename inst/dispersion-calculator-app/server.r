@@ -1,5 +1,6 @@
 shinyServer( function(input, output, session) {
-    moment2_by_time <- reactive({
+    
+    analysisResults <- reactive({
         input$submit
 
         isolate({dye.path <- input$dye_input
@@ -10,16 +11,18 @@ shinyServer( function(input, output, session) {
 
         if (! any(sapply(list(dye.path, dxdy.inp.path, depth.path, start.datetime), is.null))) {
             start.datetime <- as.POSIXct(start.datetime, format='%m/%d/%Y %H:%M')
-            getSecondMoments(dye.path$datapath, dxdy.inp.path$datapath, depth.path$datapath, start.datetime, duration)
+            performAnalysis(dye.path$datapath, dxdy.inp.path$datapath, depth.path$datapath, start.datetime, duration)
         }
     })
 
+    # create a reactive second moment plot
     second_moment_plot <- reactive({
-        moment2.by.time <- moment2_by_time()
+        analysisResults <- analysisResults() # grab second moment results from list
+        moment2.by.time <- analysisResults[[1]]
         if (!is.null(moment2.by.time)) {
             start.datetime <- as.POSIXct(isolate(input$start_datetime), format='%m/%d/%Y %H:%M')
             end.datetime <- start.datetime + as.difftime(input$duration, units='hours')
-            ggplotGrob(make.plot(moment2.by.time, start.datetime, end.datetime))
+            ggplotGrob(make.moment.plot(moment2.by.time, start.datetime, end.datetime))
         } else {
             textGrob('Upload your data, set the start time and duration, and press submit to process.')
         }
@@ -28,14 +31,44 @@ shinyServer( function(input, output, session) {
     output$second_moment_timeseries <- renderPlot({
         grid.draw(second_moment_plot())
     })
-
-    output$download <- downloadHandler(
-        filename='second_moment_plot.png',
-        content=function(filename) {
-            png(filename=filename, height=800, width=600)
-            grid.draw(second_moment_plot())
-            dev.off()
-        }
+    
+    output$download_1 <- downloadHandler(
+      filename='second_moment_plot.png',
+      content=function(filename) {
+        png(filename=filename, height=800, width=600)
+        grid.draw(second_moment_plot())
+        dev.off()
+      }
     )
 
+    # create a reactive dye mass plot
+    dye_mass_plot <- reactive({
+      analysisResults <- analysisResults()
+      dye.mass.by.time <- analysisResults[[2]]
+      if (!is.null(dye.mass.by.time)) {
+        start.datetime <- as.POSIXct(isolate(input$start_datetime), format='%m/%d/%Y %H:%M')
+        end.datetime <- start.datetime + as.difftime(input$duration, units='hours')
+        ggplotGrob(make.dye.mass.plot(dye.mass.by.time, start.datetime, end.datetime))
+      } else {
+        textGrob('Upload your data, set the start time and duration, and press submit to process.')
+      }
+    })
+    
+    output$dye_mass_timeseries <- renderPlot({
+      grid.draw(dye_mass_plot())
+    })
+
+    output$download_2 <- downloadHandler(
+      filename='dye_mass_inventory_plot.png',
+      content=function(filename) {
+        png(filename=filename, height=800, width=600)
+        grid.draw(dye_mass_plot())
+        dev.off()
+      }
+    )
+    
+    session$onSessionEnded(function() {
+      stopApp()
+    })
+    
 })

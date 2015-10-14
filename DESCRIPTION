@@ -1,15 +1,17 @@
 Package: DispersionCalculator
 Title: Dispersion rate calculator for 3D open channels.
-Version: 0.1
-Authors@R: "Matthew Plourde <plourde.m@gmail.com> [aut, cre]"
+Version: 0.4
+Authors@R: c(person('Matthew', 'Plourde',email='plourde.m@gmail.com', role=c('aut', 'cre')),
+             person('Edward', 'Lennon',email='edward.lennonjr@phila.gov', role='aut'))
 Description: Calculates the concentration weighted average second
     moments and corresponding dispersion rates for the x, y, and z
     directions in an open channel water body.
 Depends:
-    R (>= 3.1.0)
+    R (>= 3.2.2)
 Imports:
     reshape2,
     ggplot2,
+    dplyr,
     RColorBrewer,
     grid,
     shiny,

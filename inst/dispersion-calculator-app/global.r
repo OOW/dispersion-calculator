@@ -73,8 +73,8 @@ listTo3DArray <- function(lst, exclude.cols=c()) {
 #' @param list.raw The list of molten data.frames that have a column for each axis and a measurement column
 #' @return A list of pivoted data.frames
 pivot.raw <- function(axis., other.axes, var, list.raw) {
-    lapply(list.raw, function(timestep) {
-        timestep <- timestep[c(axis., other.axes, var)]
+    lapply(list.raw, function(timestep) { 
+        timestep <- timestep[c(axis., other.axes, var)] #timestep is a data.frame
         cast.form <- paste(paste(other.axes, collapse='+'), axis., sep='~')
         dcast(timestep, as.formula(cast.form), value.var=var)
     })
@@ -95,6 +95,7 @@ pivot.raw <- function(axis., other.axes, var, list.raw) {
 #'      at each grid cell.
 #' @return a vector of the concentration second moments along the specified axis, ordered by timestep
 getAxisSecondMoments <- function(axis., delta.list.raw, coor.list.raw, dye.list.raw) {
+    #browser()
     # define the names of the axes and identify the other axes according the axis. argument
     axes. <- c('x', 'y', 'z')
     other.axes <- setdiff(axes., axis.)
@@ -106,7 +107,7 @@ getAxisSecondMoments <- function(axis., delta.list.raw, coor.list.raw, dye.list.
 
     # pivot each of the lists along the desired axis. Consult the definition of pivot.raw for 
     # a description of what the output looks like.
-    dye.list <- pivot.raw(axis., other.axes, 'dye', dye.list.raw)
+    dye.list <- pivot.raw(axis., other.axes, 'dye', dye.list.raw)  # "dye" is a constant column name
     coor.list <- pivot.raw(axis., other.axes, coor.var, coor.list.raw)
     delta.list <- pivot.raw(axis., other.axes, delta.var, delta.list.raw)
 
@@ -161,6 +162,28 @@ getAxisSecondMoments <- function(axis., delta.list.raw, coor.list.raw, dye.list.
     moment2.mean
 }
 
+#' @param delta.list.raw A list of delta data.frames in order of timestep. Each of the data.frames 
+#'      in this list has 6 columns: x, y, and z grid cell indexes, and the delta x, delta y, and delta z
+#'      for each grid cell.
+#' @param dye.list.raw A list of the dye concentration data.frames in order of timestep. Each 
+#'      of these data.frames has 4 columns: x, y, and z grid cell indexes, and the dye concentration at
+#'      at each grid cell.
+calculateDyeMass <- function(delta.raw, dye.raw){
+
+  d <- delta.raw %>%
+    mutate_(volume = ~(dx * dy * dz)) %>%
+    select_( ~x, ~y, ~z, ~volume)%>%
+    cbind(., dye = dye.raw$dye)
+  
+  dye_mass_cell <- d %>%
+    mutate_(dye_mass = ~(volume * dye))
+  
+  # Sum dye mass for all cells, convert from g to kg (assumption)
+  dye_mass <- sum(dye_mass_cell$dye_mass) / 10^6
+  
+  return(dye_mass)
+}
+
 #' Takes data input paths and returns concentration weighted average second moments 
 #' for each axis.
 #' 
@@ -170,8 +193,8 @@ getAxisSecondMoments <- function(axis., delta.list.raw, coor.list.raw, dye.list.
 #' @param start.datetime POSIXct datetime of the start of the analysis
 #' @param hours Number of hours after start.datetime to process
 #' @return A list with the concentration weight average second moments for each axis
-getSecondMoments <- function(dye.path, dxdy.inp.path, depth.path, start.datetime, hours) {
-
+performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, start.datetime, hours) {
+    #browser()
     # read in the delta data and name the columns
     dxdy.inp <- read.table(dxdy.inp.path, skip=4, header=FALSE, fill=TRUE)[1:4]
     names(dxdy.inp) <- c('x', 'y', 'dx', 'dy')
@@ -287,16 +310,21 @@ getSecondMoments <- function(dye.path, dxdy.inp.path, depth.path, start.datetime
     # subset the delta data to the desired time range 
     delta.list.raw <- delta.list.raw[timestamp.idxs]
 
+    dye.mass.inventory <- mapply(calculateDyeMass, delta.list.raw, dye.list.raw)
+    
     # get the concentrated weighted average second moment timeseries for each axis
     avg.moment2s <- lapply(c('x', 'y', 'z'), getAxisSecondMoments, delta.list.raw, coor.list.raw, dye.list.raw)
-    avg.moment2s
+    
+    # return list of dye mass and second moments
+    list(avg.moment2s, dye.mass.inventory)
+    
 }
 
 #' Takes a list of the concentration weighted average second for each axis and returns a line plot
 #'
 #' @param moment2.by.time List of three entries, the second moment time series for each axis
 #' @param duration the number of hours 
-make.plot <- function(moment2.by.time, start.datetime, end.datetime) {
+make.moment.plot <- function(moment2.by.time, start.datetime, end.datetime) {
     hour.range <- seq(as.integer(as.numeric(end.datetime - start.datetime, units='hours')))
     # calculate the dispersion coefficient for each axis as the slope between the first second moment
     # and the last second moment, scale by seconds
@@ -327,4 +355,22 @@ make.plot <- function(moment2.by.time, start.datetime, end.datetime) {
              y=expression("Weighted Average of Concentration Variance"~~(m^2)))  +
         scale_x_continuous(breaks=hour.range) + theme(axis.text=element_text(vjust=-.4))
     p
+}
+
+#' Takes a named vector of the dye mass inventory and returns a line plot
+#'
+#' @param dye.mass.by.time List of three entries, the second moment time series for each axis
+#' @param duration the number of hours 
+make.dye.mass.plot <- function(dye.mass.by.time, start.datetime, end.datetime) {
+
+  timestep_hour <- c(0, seq(as.integer(as.numeric(end.datetime - start.datetime, units='hours'))))
+
+  d <- data.frame(timestep_hour, dye.mass.by.time)
+  # make the plot
+  date.range <- paste(format(start.datetime, '%m/%d/%Y %H:%M'), '--', format(end.datetime, '%m/%d/%Y %H:%M'))
+  p <- ggplot(data=d, aes(x=timestep_hour, y=dye.mass.by.time)) + geom_point() + geom_line() + 
+    stat_smooth(method='lm', se=FALSE) +
+    labs(title=bquote(atop(.(date.range))), y=expression("Dye Mass (kg)"))  +
+    scale_x_continuous(breaks=timestep_hour) + theme(axis.text=element_text(vjust=-.4))
+  p
 }
