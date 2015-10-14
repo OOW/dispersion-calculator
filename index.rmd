@@ -28,6 +28,11 @@ After subsetting for the desired time frame, `getAxisSecondMoments` takes these 
 
 For the remainder of this document, we'll use Z as the example axis for which we are calculating the average centralized second moments, but the formulas and code presented generalize to the other axes by simply swapping the variable names.
 
+### Calculating the dye mass inventory
+
+The goal is to calculate the total dye mass in all grid cells at every timestep.
+Assumptions are that the dye concentrations in `dye.list.raw` are in g/m^3 and that dx, dy, and dz from `delta.list.raw` are in meters.  First the volume in each cell is calculated by multipling dx, dy and dz.  Next the dye mass is calculated for each cell by multiplying the cell volume by the cell dye concentration.  Finally the dye mass is summed for all cells at each timestep.
+
 ### Estimating dispersion rates
 
 Because the following calculations require us to estimate areas under the coordinate curves, it's necessary to convert the coordinate values of the desired axis to their absolute values. In the case of the Z axis, this isn't necessary, since all of the Z coordinates are positive. But for the X and Y directions, we define an arbitrary origin for the X and Y coordinates, and there will be negative values.
