@@ -1,5 +1,5 @@
 shinyUI(pageWithSidebar(
-    headerPanel('DispersionCalculator v0.3'),
+    headerPanel('DispersionCalculator v0.4'),
     sidebarPanel(wellPanel(
         fileInput('dye_input', strong('Dye input (*.asc)')),
         fileInput('dxdy_input', strong('Dxdy input (*.inp)')),
@@ -18,9 +18,11 @@ shinyUI(pageWithSidebar(
         )
     ),
     wellPanel(
-        downloadButton('download', 'Download plot')
+        downloadButton('download_1', 'Download second-moment plot'), 
+        downloadButton('download_2', 'Download dye mass inventory plot')
     )),
-    mainPanel(plotOutput('second_moment_timeseries', height='800px'))
+    mainPanel(plotOutput('second_moment_timeseries', height='800px'),
+              plotOutput('dye_mass_timeseries', height='800px'))
 ))
 
 # 2012-8-5 9:15
