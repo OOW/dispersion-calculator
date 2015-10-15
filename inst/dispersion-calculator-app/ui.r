@@ -9,6 +9,8 @@ shinyUI(pageWithSidebar(
         #datetimeInput('start_datetime', strong('Start time'), min='1/1/2010', max=format(Sys.Date(), '%m/%d/%Y')),
         datetimeInput('start_datetime', strong('Start time')),
         numericInput('duration', strong('Duration (hours)'), value=2, min=2),
+        numericInput('x.idx.first.cell', strong('First x Cell'), value=237),
+        numericInput('nlayers', strong('Number z layer'), value=5),
         actionButton('submit', strong('Submit'))
     ),
     conditionalPanel(condition="$('#second_moment_timeseries').hasClass('recalculating')",

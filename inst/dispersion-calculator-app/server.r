@@ -4,19 +4,28 @@ shinyServer( function(input, output, session) {
         input$submit
 
         isolate({dye.path <- input$dye_input
-                dxdy.inp.path <- input$dxdy_input
-                depth.path <- input$depth_input
-                start.datetime <- input$start_datetime
-                duration <- input$duration})
+                 dxdy.inp.path <- input$dxdy_input
+                 depth.path <- input$depth_input
+                 start.datetime <- input$start_datetime
+                 duration <- input$duration
+                 x.idx.first.cell <- input$x.idx.first.cell
+                 nlayers <- input$nlayers
+                })
 
         if (! any(sapply(list(dye.path, dxdy.inp.path, depth.path, start.datetime), is.null))) {
             start.datetime <- as.POSIXct(start.datetime, format='%m/%d/%Y %H:%M')
-            performAnalysis(dye.path$datapath, dxdy.inp.path$datapath, depth.path$datapath, start.datetime, duration)
+            performAnalysis(dye.path$datapath, dxdy.inp.path$datapath, depth.path$datapath, 
+                            start.datetime, duration, x.idx.first.cell, nlayers)
         }
     })
 
     # create a reactive second moment plot
     second_moment_plot <- reactive({
+        
+        isolate({start.datetime <- input$start_datetime
+                 duration <- input$duration
+              })
+        
         analysisResults <- analysisResults() # grab second moment results from list
         moment2.by.time <- analysisResults[[1]]
         if (!is.null(moment2.by.time)) {
@@ -43,6 +52,11 @@ shinyServer( function(input, output, session) {
 
     # create a reactive dye mass plot
     dye_mass_plot <- reactive({
+      
+      isolate({start.datetime <- input$start_datetime
+      duration <- input$duration
+      })
+      
       analysisResults <- analysisResults()
       dye.mass.by.time <- analysisResults[[2]]
       if (!is.null(dye.mass.by.time)) {

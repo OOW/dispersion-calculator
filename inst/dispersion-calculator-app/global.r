@@ -18,6 +18,7 @@ options(shiny.maxRequestSize=300*1024^2)
 #'
 #' @param path The filepath to the timeseries file
 #' @return a list of the matrices, one for each timestep
+#' Gets called two times, for dye.path and depth.path
 stackedTimeseriesToList <- function(path) {
     # read the file as a string
     raw.txt <- readChar(path, file.info(path)$size)
@@ -194,14 +195,17 @@ calculateDyeMass <- function(delta.raw, dye.raw){
 #' @param start.datetime POSIXct datetime of the start of the analysis
 #' @param hours Number of hours after start.datetime to process
 #' @return A list with the concentration weight average second moments for each axis
-performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, start.datetime, hours) {
+performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, 
+                            start.datetime, hours, x.idx.first.cell, nlayers) {
     #browser()
     # read in the delta data and name the columns
+    # skip the first 4 rows, and only read the first 4 columns
     dxdy.inp <- read.table(dxdy.inp.path, skip=4, header=FALSE, fill=TRUE)[1:4]
     names(dxdy.inp) <- c('x', 'y', 'dx', 'dy')
 
     # define the number of layers in the z direction
-    nlayers <- 5
+    # set as reactive input now
+    #nlayers <- 5
 
     # read in the dye concentration data, melt the data for each timestep
     # into a table where there are four columns, x, y, z, and concetration
@@ -243,10 +247,12 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, start.datetime,
     dx.matrix.filled <- as.matrix(dx.matrix.filled[-1])
 
     # this is the x direction index corresponding to the lowest, left-most grid cell in the domain
-    x.idx.first.cell <- 237
+    # set as reactive input now
+    #x.idx.first.cell <- 237
 
     # for each grid cell, calculate that grid cells x coordinate by summing up all of the 
     # delta x's between the cell and the first cell
+    # 1 in apply means apply function over the matrix's row
     x.coors <- t(apply(dx.matrix.filled, 1, function(row) {
         c(-rev(cumsum(row[x.idx.first.cell:1])), cumsum(c(0, row[(x.idx.first.cell + 1):(length(row)-1)])))
     }))
