@@ -1,6 +1,7 @@
 shinyServer( function(input, output, session) {
     
-    analysisResults <- reactive({
+  
+  analysisResults <- reactive({
         input$submit
 
         isolate({dye.path <- input$dye_input
@@ -24,6 +25,7 @@ shinyServer( function(input, output, session) {
         
         isolate({start.datetime <- input$start_datetime
                  duration <- input$duration
+                 timestep <- input$timestep
               })
         
         analysisResults <- analysisResults() # grab second moment results from list
@@ -31,7 +33,7 @@ shinyServer( function(input, output, session) {
         if (!is.null(moment2.by.time)) {
             start.datetime <- as.POSIXct(isolate(input$start_datetime), format='%m/%d/%Y %H:%M')
             end.datetime <- start.datetime + as.difftime(isolate(input$duration), units='hours')
-            ggplotGrob(make.moment.plot(moment2.by.time, start.datetime, end.datetime))
+            ggplotGrob(make.moment.plot(moment2.by.time, start.datetime, end.datetime, timestep))
         } else {
             textGrob('Upload your data, set the start time and duration, and press submit to process.')
         }

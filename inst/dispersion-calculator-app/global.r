@@ -219,7 +219,7 @@ calculateDyeMass <- function(delta.raw, dye.raw){
   
   # Sum dye mass for all cells, convert from g to kg (assumption)
   dye_mass <- sum(dye_mass_cell$dye_mass) / 10^6
-  
+
   return(dye_mass)
 }
 
@@ -396,36 +396,39 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
 #'
 #' @param moment2.by.time List of three entries, the second moment time series for each axis
 #' @param duration the number of hours 
-make.moment.plot <- function(moment2.by.time, start.datetime, end.datetime) {
-    hour.range <- seq(as.integer(as.numeric(end.datetime - start.datetime, units='hours')))
+make.moment.plot <- function(moment2.by.time, start.datetime, end.datetime, timestep) {
+
+    #hour.range <- seq(as.integer(as.numeric(end.datetime - start.datetime, units='hours')))
     # calculate the dispersion coefficient for each axis as the slope between the first second moment
     # and the last second moment, scale by seconds
-    secs.in.hr <- 3600
+    # compute the seconds in each timestep
+    secs.in.timestep <- timestep * 60 # hour * * 60 sec/min
+    
     Ks <- lapply(moment2.by.time, function(axis) {
         # old method, slope from first and last data point
         #(.5 * ((tail(axis, 1) - head(axis, 1)) / (tail(hour.range, 1) - head(hour.range, 1)))) / secs.in.hr
         d <- data.frame(x=seq_along(axis), y=axis)
         mod <- lm(y ~ x, d)
-        .5 * coef(mod)[[2]] / secs.in.hr
+        .5 * coef(mod)[[2]] / secs.in.timestep
     })
     # for each axis, add a timeseries column and scale the second moments by the standard deviation. The second 
     # moments are scaled so that they can be plotted
-    tab.list <- lapply(moment2.by.time, function(series) data.frame(timestep_hour=seq_along(series), series)) #scale(series)))
+    tab.list <- lapply(moment2.by.time, function(series) data.frame(timestep=seq_along(series), series)) #scale(series)))
     # merge the second moments for each axis by the timestep
-    full.tab <- Reduce(function(...) merge(..., by='timestep_hour'), tab.list)
-    names(full.tab) <- c('timestep_hour', 'x', 'y', 'z')
+    full.tab <- Reduce(function(...) merge(..., by='timestep'), tab.list)
+    names(full.tab) <- c('timestep', 'x', 'y', 'z')
     # melt the data.frame into three columns: timestep, axis, avg.second.moment
-    full.tab.raw <- melt(full.tab, id.var='timestep_hour', variable.name='axis', value.name='avg.second.moment')
+    full.tab.raw <- melt(full.tab, id.var='timestep', variable.name='axis', value.name='avg.second.moment')
 
     # make the plot
     date.range <- paste(format(start.datetime, '%m/%d/%Y %H:%M'), '--', format(end.datetime, '%m/%d/%Y %H:%M'))
-    p <- ggplot(data=full.tab.raw, aes(x=timestep_hour, y=avg.second.moment)) + geom_point() + geom_line() + 
+    p <- ggplot(data=full.tab.raw, aes(x=timestep, y=avg.second.moment)) + geom_point() + geom_line() + 
         stat_smooth(method='lm', se=FALSE) +
         facet_wrap(~ axis, ncol=1, scales='free_y') + 
         labs(title=bquote(atop(.(date.range), 
                    paste(list(K[x]==.(round(Ks[[1]], 2)), K[y]==.(round(Ks[[2]], 2)), K[z]==.(round(Ks[[3]], 8))), ~~(frac(m^2, s))))),
              y=expression("Weighted Average of Concentration Variance"~~(m^2)))  +
-        scale_x_continuous(breaks=hour.range) + theme(axis.text=element_text(vjust=-.4))
+        scale_x_continuous(breaks=1:max(full.tab.raw$timestep)) + theme(axis.text=element_text(vjust=-.4))
     p
 }
 
@@ -435,14 +438,13 @@ make.moment.plot <- function(moment2.by.time, start.datetime, end.datetime) {
 #' @param duration the number of hours 
 make.dye.mass.plot <- function(dye.mass.by.time, start.datetime, end.datetime) {
 
-  timestep_hour <- c(0, seq(as.integer(as.numeric(end.datetime - start.datetime, units='hours'))))
-
-  d <- data.frame(timestep_hour, dye.mass.by.time)
+  #timestep <- c(0, seq(as.integer(as.numeric(end.datetime - start.datetime, units='hours'))))
+  d <- data.frame(timestep=seq_along(dye.mass.by.time), dye.mass.by.time) 
   # make the plot
   date.range <- paste(format(start.datetime, '%m/%d/%Y %H:%M'), '--', format(end.datetime, '%m/%d/%Y %H:%M'))
-  p <- ggplot(data=d, aes(x=timestep_hour, y=dye.mass.by.time)) + geom_point() + geom_line() + 
+  p <- ggplot(data=d, aes(x=timestep, y=dye.mass.by.time)) + geom_point() + geom_line() + 
     stat_smooth(method='lm', se=FALSE) +
     labs(title=bquote(atop(.(date.range))), y=expression("Dye Mass (kg)"))  +
-    scale_x_continuous(breaks=timestep_hour) + theme(axis.text=element_text(vjust=-.4))
+    scale_x_continuous(breaks=d$timestep) + theme(axis.text=element_text(vjust=-.4))
   p
 }

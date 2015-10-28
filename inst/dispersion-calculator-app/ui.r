@@ -12,8 +12,9 @@ shinyUI(
                      choices = list("Older (3 cloumns)" = 1, "Newer (25 columns wrapped)" = 2), 
                      selected = 1),
         datetimeInput('start_datetime', strong('Start time')),
-        numericInput('duration', strong('Duration (hours)'), value=2, min=2),
-        numericInput('x.idx.first.cell', strong('First idx x Cell'), value=237),
+        numericInput('timestep', strong('timestep (minutes)'), value=15),
+        numericInput('duration', strong('Duration (hours)'), value=2),
+        numericInput('x.idx.first.cell', strong('First idx x Cell'), value=1), #237 for past
         numericInput('nlayers', strong('Number z layer'), value=5),
         actionButton('submit', strong('Submit'))
       ),
