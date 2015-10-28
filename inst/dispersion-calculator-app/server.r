@@ -1,5 +1,26 @@
 shinyServer( function(input, output, session) {
     
+  # Update the start datetime with the first line of the dye input file
+  observe({
+    
+    if(!is.null(input$dye_input)){
+      dye.path <- input$dye_input
+      dye.path <- dye.path$datapath
+      start_dtime.chr <- trimws(readLines(dye.path,n = 1))
+      start_dtime.chr <- strsplit(start_dtime.chr, split = '.', fixed=TRUE)[[1]]
+      tot.mins <- round(as.numeric(paste0('.', start_dtime.chr[2])) * 24 * 60)
+      hours <- tot.mins %/% 60
+      mins <- tot.mins %% 60
+      start_datetime <- paste(start_dtime.chr[1], hours, mins, format(Sys.Date(), '%Y'))
+      # convert the timestep datetime strings to POSIXct datetimes
+      start_datetime <- as.POSIXct(start_datetime, format='%j %H %M %Y')
+      start_datetime <- format(start_datetime, format='%m/%d/%Y %H:%M')
+      # update start datetime when dye file is uploaded
+      updateDateInput(session, "start_datetime",
+                      value = start_datetime)
+    }
+  })
+  
   
   analysisResults <- reactive({
         input$submit
