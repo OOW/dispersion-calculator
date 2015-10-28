@@ -18,22 +18,60 @@ options(shiny.maxRequestSize=300*1024^2)
 #'
 #' @param path The filepath to the timeseries file
 #' @return a list of the matrices, one for each timestep
+#' Gets called two times, for dye.path and depth.path
 stackedTimeseriesToList <- function(path) {
-    # read the file as a string
-    raw.txt <- readChar(path, file.info(path)$size)
-    # define the regular expression pattern that matches those lines that start a new timestep.
-    # this pattern matches a line containing a single decimal number with optional white space on either side of it
-    timestep.pat <- '(?m)^\\s*\\d+\\.\\d+\\s*$'
-    # extract all the timestep lines from the file
-    timesteps <- unlist(regmatches(raw.txt, gregexpr(timestep.pat, raw.txt, perl=TRUE)))
-    # remove whitespace from the timesteps
-    timesteps <- gsub('[[:space:]]', '', timesteps)
-    # partition the file at the timestep lines
-    txt.sp <- unlist(strsplit(raw.txt, timestep.pat, perl=TRUE))[-1]
-    # read each partition into a data.frame and store these data.frames in a list
-    lst <- lapply(txt.sp, function(t) read.table(text=t))
-    # use the timesteps as the names of the entries in the list 
-    setNames(lst, timesteps)
+  # read the file as a string
+  raw.txt <- readChar(path, file.info(path)$size)
+  # define the regular expression pattern that matches those lines that start a new timestep.
+  # this pattern matches a line containing a single decimal number with optional white space on either side of it
+  timestep.pat <- '(?m)^\\s*\\d+\\.\\d+\\s*$'
+  # extract all the timestep lines from the file
+  timesteps <- unlist(regmatches(raw.txt, gregexpr(timestep.pat, raw.txt, perl=TRUE)))
+  # remove whitespace from the timesteps
+  timesteps <- gsub('[[:space:]]', '', timesteps)
+  # partition the file at the timestep lines
+  txt.sp <- unlist(strsplit(raw.txt, timestep.pat, perl=TRUE))[-1]
+  # read each partition into a data.frame and store these data.frames in a list
+  lst <- lapply(txt.sp, function(t) read.table(text=t))
+  # use the timesteps as the names of the entries in the list 
+  setNames(lst, timesteps)
+}
+
+#' Takes the path to a matrix timeseries file in which the matrices 
+#' are stacked vertically and returns a list where each item in the list 
+#' is the matrix corresponding to that timestep.
+#'
+#' @param path The filepath to the timeseries file
+#' @return a list of the matrices, one for each timestep
+#' Gets called once, for newer depth.path file (specficed in depth_file_type)
+
+stackedTimeseriesToList_ForNewDepth <- function(path) {
+  # read the file as a string
+  raw.txt <- readChar(path, file.info(path)$size)
+  # define the regular expression pattern that matches those lines that start a new timestep.
+  # this pattern matches a line containing a single decimal number with optional white space on either side of it
+  timestep.pat <- '(?m)^\\s*\\d+\\.\\d+\\s*$'
+  # extract all the timestep lines from the file
+  timesteps <- unlist(regmatches(raw.txt, gregexpr(timestep.pat, raw.txt, perl=TRUE)))
+  # remove whitespace from the timesteps
+  timesteps <- gsub('[[:space:]]', '', timesteps)
+  # partition the file at the timestep lines
+  txt.sp <- unlist(strsplit(raw.txt, timestep.pat, perl=TRUE))[-1]
+  # read each partition into a data.frame and store these data.frames in a list
+  # new depth data requires fill = TRUE (fills missing data with NA)
+  lst <- lapply(txt.sp, function(t) read.table(text=t, fill=TRUE))
+  # Take each row, transpose to a column, then append them all into 1 column
+  lst <- lapply(lst, function(d) {
+    for(r in 1:(nrow(d))) {
+      if(r==1){final_t <- matrix(t(d[r,]))}
+      if(r>1){final_t <- rbind(final_t,t(d[r,]))}
+    }
+    final_t <- data.frame(final_t[!is.na(final_t),])
+    names(final_t) <- "V1"
+    return(final_t)
+  })
+  # use the timesteps as the names of the entries in the list 
+  foo <- setNames(lst, timesteps)
 }
 
 #' Takes a list of matrices and returns a 3D array
@@ -96,7 +134,7 @@ pivot.raw <- function(axis., other.axes, var, list.raw) {
 #'      at each grid cell.
 #' @return a vector of the concentration second moments along the specified axis, ordered by timestep
 getAxisSecondMoments <- function(axis., delta.list.raw, coor.list.raw, dye.list.raw) {
-    #browser()
+
     # define the names of the axes and identify the other axes according the axis. argument
     axes. <- c('x', 'y', 'z')
     other.axes <- setdiff(axes., axis.)
@@ -177,11 +215,11 @@ calculateDyeMass <- function(delta.raw, dye.raw){
     cbind(., dye = dye.raw$dye)
   
   dye_mass_cell <- d %>%
-    mutate_(dye_mass = ~(volume * dye))
+    mutate_(dye_mass = ~(abs(volume) * dye))
   
   # Sum dye mass for all cells, convert from g to kg (assumption)
   dye_mass <- sum(dye_mass_cell$dye_mass) / 10^6
-  
+
   return(dye_mass)
 }
 
@@ -194,14 +232,17 @@ calculateDyeMass <- function(delta.raw, dye.raw){
 #' @param start.datetime POSIXct datetime of the start of the analysis
 #' @param hours Number of hours after start.datetime to process
 #' @return A list with the concentration weight average second moments for each axis
-performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, start.datetime, hours) {
-    #browser()
+performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, 
+                            depth_file_type, start.datetime, hours, x.idx.first.cell, nlayers) {
+
     # read in the delta data and name the columns
+    # skip the first 4 rows, and only read the first 4 columns
     dxdy.inp <- read.table(dxdy.inp.path, skip=4, header=FALSE, fill=TRUE)[1:4]
     names(dxdy.inp) <- c('x', 'y', 'dx', 'dy')
 
     # define the number of layers in the z direction
-    nlayers <- 5
+    # set as reactive input now
+    #nlayers <- 5
 
     # read in the dye concentration data, melt the data for each timestep
     # into a table where there are four columns, x, y, z, and concetration
@@ -243,10 +284,12 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, start.datetime,
     dx.matrix.filled <- as.matrix(dx.matrix.filled[-1])
 
     # this is the x direction index corresponding to the lowest, left-most grid cell in the domain
-    x.idx.first.cell <- 237
+    # set as reactive input now
+    #x.idx.first.cell <- 237
 
     # for each grid cell, calculate that grid cells x coordinate by summing up all of the 
     # delta x's between the cell and the first cell
+    # 1 in apply means apply function over the matrix's row
     x.coors <- t(apply(dx.matrix.filled, 1, function(row) {
         c(-rev(cumsum(row[x.idx.first.cell:1])), cumsum(c(0, row[(x.idx.first.cell + 1):(length(row)-1)])))
     }))
@@ -279,17 +322,32 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, start.datetime,
 
     # read in the depth data to calculate the coordinates for the z direction, combine this 
     # with the x-y coordinate data
-    depth.list <- stackedTimeseriesToList(depth.path)
+    if(depth_file_type == 1){
+      depth.list <- stackedTimeseriesToList(depth.path)
+    }
+    if(depth_file_type == 2){
+      depth.list <- stackedTimeseriesToList_ForNewDepth(depth.path)
+    }
+
     coor.list.raw <- lapply(depth.list, function(depth.timestep) {
+      
+      # Calculate the adjusted depth
+      if(depth_file_type == 1){
         # final depth is the sum of first and second columns of the depth input
         depth.adj <- depth.timestep[1] + abs(depth.timestep[2])
-        # for each x-y pair, create the depth coordinates
-        depths <- t(apply(depth.adj, 1, function(depth) seq(from=depth/nlayers, to=depth, by=depth/nlayers)))
-        # combine the depth coordinates with the x-y coordinates and melt the z columns in rows
-        d <- data.frame(coors, setNames(as.data.frame(depths), 1:nlayers), check.names=FALSE)
-        d <- melt(d, id.vars=c('x', 'y', 'xcoor', 'ycoor'), variable.name='z', value.name='zcoor')
-        # convert the z indexes to integers
-        transform(d, z=as.integer(as.character(levels(z)))[as.numeric(z)])
+      }
+      if(depth_file_type == 2){
+        # The new format does not have an adjustment factor
+        depth.adj <- depth.timestep[1]
+      }
+ 
+      # for each x-y pair, create the depth coordinates
+      depths <- t(apply(depth.adj, 1, function(depth) seq(from=depth/nlayers, to=depth, by=depth/nlayers)))
+      # combine the depth coordinates with the x-y coordinates and melt the z columns in rows
+      d <- data.frame(coors, setNames(as.data.frame(depths), 1:nlayers), check.names=FALSE)
+      d <- melt(d, id.vars=c('x', 'y', 'xcoor', 'ycoor'), variable.name='z', value.name='zcoor')
+      # convert the z indexes to integers
+      transform(d, z=as.integer(as.character(levels(z)))[as.numeric(z)])
     })
 
     # subset the coordinate data to the desired time range
@@ -297,22 +355,35 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, start.datetime,
 
     # calculte the delta z values and combine them with the delta x and delta y values
     delta.list.raw <- lapply(depth.list, function(depth.timestep) {
-        # final depth is the sum of the first and second columns of the depth input
+        
+      # Calculate the adjusted depth
+      if(depth_file_type == 1){
+        # final depth is the sum of first and second columns of the depth input
         depth.adj <- depth.timestep[1] + abs(depth.timestep[2])
-        # calculate the delta z series for each x-y pair
-        deltas <- t(apply(depth.adj, 1, function(depth) rep(depth/nlayers, nlayers)))
-        # combine the delta z data with the delta x and delta y data, then melt the z columns into rows
-        d <- data.frame(dxdy.inp, setNames(as.data.frame(deltas), 1:nlayers), check.names=FALSE)
-        d <- melt(d, id.vars=c('x', 'y', 'dx', 'dy'), value.name='dz', variable.name='z')
-        # convert the z direction indexes to integers
-        transform(d, z=as.integer(as.character(levels(z)))[as.numeric(z)])
+      }
+      if(depth_file_type == 2){
+        # The new format does not have an adjustment factor
+        depth.adj <- depth.timestep[1]
+      }
+      
+      # calculate the delta z series for each x-y pair
+      deltas <- t(apply(depth.adj, 1, function(depth) rep(depth/nlayers, nlayers)))
+      # combine the delta z data with the delta x and delta y data, then melt the z columns into rows
+      d <- data.frame(dxdy.inp, setNames(as.data.frame(deltas), 1:nlayers), check.names=FALSE)
+      d <- melt(d, id.vars=c('x', 'y', 'dx', 'dy'), value.name='dz', variable.name='z')
+      # convert the z direction indexes to integers
+      transform(d, z=as.integer(as.character(levels(z)))[as.numeric(z)])
     })
 
     # subset the delta data to the desired time range 
     delta.list.raw <- delta.list.raw[timestamp.idxs]
 
     dye.mass.inventory <- mapply(calculateDyeMass, delta.list.raw, dye.list.raw)
-    
+
+    # clear some memory
+    rm(dx.matrix.filled, dy.matrix.filled, x.coors, y.coors, 
+       x.coors.final, y.coors.final, depth.list, dye.list)
+
     # get the concentrated weighted average second moment timeseries for each axis
     avg.moment2s <- lapply(c('x', 'y', 'z'), getAxisSecondMoments, delta.list.raw, coor.list.raw, dye.list.raw)
     
@@ -325,36 +396,39 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, start.datetime,
 #'
 #' @param moment2.by.time List of three entries, the second moment time series for each axis
 #' @param duration the number of hours 
-make.moment.plot <- function(moment2.by.time, start.datetime, end.datetime) {
-    hour.range <- seq(as.integer(as.numeric(end.datetime - start.datetime, units='hours')))
+make.moment.plot <- function(moment2.by.time, start.datetime, end.datetime, timestep) {
+
+    #hour.range <- seq(as.integer(as.numeric(end.datetime - start.datetime, units='hours')))
     # calculate the dispersion coefficient for each axis as the slope between the first second moment
     # and the last second moment, scale by seconds
-    secs.in.hr <- 3600
+    # compute the seconds in each timestep
+    secs.in.timestep <- timestep * 60 # hour * * 60 sec/min
+    
     Ks <- lapply(moment2.by.time, function(axis) {
         # old method, slope from first and last data point
         #(.5 * ((tail(axis, 1) - head(axis, 1)) / (tail(hour.range, 1) - head(hour.range, 1)))) / secs.in.hr
         d <- data.frame(x=seq_along(axis), y=axis)
         mod <- lm(y ~ x, d)
-        .5 * coef(mod)[[2]] / secs.in.hr
+        .5 * coef(mod)[[2]] / secs.in.timestep
     })
     # for each axis, add a timeseries column and scale the second moments by the standard deviation. The second 
     # moments are scaled so that they can be plotted
-    tab.list <- lapply(moment2.by.time, function(series) data.frame(timestep_hour=seq_along(series), series)) #scale(series)))
+    tab.list <- lapply(moment2.by.time, function(series) data.frame(timestep=seq_along(series), series)) #scale(series)))
     # merge the second moments for each axis by the timestep
-    full.tab <- Reduce(function(...) merge(..., by='timestep_hour'), tab.list)
-    names(full.tab) <- c('timestep_hour', 'x', 'y', 'z')
+    full.tab <- Reduce(function(...) merge(..., by='timestep'), tab.list)
+    names(full.tab) <- c('timestep', 'x', 'y', 'z')
     # melt the data.frame into three columns: timestep, axis, avg.second.moment
-    full.tab.raw <- melt(full.tab, id.var='timestep_hour', variable.name='axis', value.name='avg.second.moment')
+    full.tab.raw <- melt(full.tab, id.var='timestep', variable.name='axis', value.name='avg.second.moment')
 
     # make the plot
     date.range <- paste(format(start.datetime, '%m/%d/%Y %H:%M'), '--', format(end.datetime, '%m/%d/%Y %H:%M'))
-    p <- ggplot(data=full.tab.raw, aes(x=timestep_hour, y=avg.second.moment)) + geom_point() + geom_line() + 
+    p <- ggplot(data=full.tab.raw, aes(x=timestep, y=avg.second.moment)) + geom_point() + geom_line() + 
         stat_smooth(method='lm', se=FALSE) +
         facet_wrap(~ axis, ncol=1, scales='free_y') + 
         labs(title=bquote(atop(.(date.range), 
                    paste(list(K[x]==.(round(Ks[[1]], 2)), K[y]==.(round(Ks[[2]], 2)), K[z]==.(round(Ks[[3]], 8))), ~~(frac(m^2, s))))),
              y=expression("Weighted Average of Concentration Variance"~~(m^2)))  +
-        scale_x_continuous(breaks=hour.range) + theme(axis.text=element_text(vjust=-.4))
+        scale_x_continuous(breaks=1:max(full.tab.raw$timestep)) + theme(axis.text=element_text(vjust=-.4))
     p
 }
 
@@ -364,14 +438,13 @@ make.moment.plot <- function(moment2.by.time, start.datetime, end.datetime) {
 #' @param duration the number of hours 
 make.dye.mass.plot <- function(dye.mass.by.time, start.datetime, end.datetime) {
 
-  timestep_hour <- c(0, seq(as.integer(as.numeric(end.datetime - start.datetime, units='hours'))))
-
-  d <- data.frame(timestep_hour, dye.mass.by.time)
+  #timestep <- c(0, seq(as.integer(as.numeric(end.datetime - start.datetime, units='hours'))))
+  d <- data.frame(timestep=seq_along(dye.mass.by.time), dye.mass.by.time) 
   # make the plot
   date.range <- paste(format(start.datetime, '%m/%d/%Y %H:%M'), '--', format(end.datetime, '%m/%d/%Y %H:%M'))
-  p <- ggplot(data=d, aes(x=timestep_hour, y=dye.mass.by.time)) + geom_point() + geom_line() + 
+  p <- ggplot(data=d, aes(x=timestep, y=dye.mass.by.time)) + geom_point() + geom_line() + 
     stat_smooth(method='lm', se=FALSE) +
     labs(title=bquote(atop(.(date.range))), y=expression("Dye Mass (kg)"))  +
-    scale_x_continuous(breaks=timestep_hour) + theme(axis.text=element_text(vjust=-.4))
+    scale_x_continuous(breaks=d$timestep) + theme(axis.text=element_text(vjust=-.4))
   p
 }
