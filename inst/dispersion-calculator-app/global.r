@@ -215,7 +215,7 @@ calculateDyeMass <- function(delta.raw, dye.raw){
     cbind(., dye = dye.raw$dye)
   
   dye_mass_cell <- d %>%
-    mutate_(dye_mass = ~(volume * dye))
+    mutate_(dye_mass = ~(abs(volume) * dye))
   
   # Sum dye mass for all cells, convert from g to kg (assumption)
   dye_mass <- sum(dye_mass_cell$dye_mass) / 10^6
