@@ -15,7 +15,7 @@ shinyServer( function(input, output, session) {
         if (! any(sapply(list(dye.path, dxdy.inp.path, depth.path, start.datetime), is.null))) {
             start.datetime <- as.POSIXct(start.datetime, format='%m/%d/%Y %H:%M')
             performAnalysis(dye.path$datapath, dxdy.inp.path$datapath, depth.path$datapath, 
-                            start.datetime, duration, x.idx.first.cell, nlayers)
+                            input$depth_file_type, start.datetime, duration, x.idx.first.cell, nlayers)
         }
     })
 
@@ -30,7 +30,7 @@ shinyServer( function(input, output, session) {
         moment2.by.time <- analysisResults[[1]]
         if (!is.null(moment2.by.time)) {
             start.datetime <- as.POSIXct(isolate(input$start_datetime), format='%m/%d/%Y %H:%M')
-            end.datetime <- start.datetime + as.difftime(input$duration, units='hours')
+            end.datetime <- start.datetime + as.difftime(isolate(input$duration), units='hours')
             ggplotGrob(make.moment.plot(moment2.by.time, start.datetime, end.datetime))
         } else {
             textGrob('Upload your data, set the start time and duration, and press submit to process.')
@@ -52,16 +52,11 @@ shinyServer( function(input, output, session) {
 
     # create a reactive dye mass plot
     dye_mass_plot <- reactive({
-      
-      isolate({start.datetime <- input$start_datetime
-      duration <- input$duration
-      })
-      
       analysisResults <- analysisResults()
       dye.mass.by.time <- analysisResults[[2]]
       if (!is.null(dye.mass.by.time)) {
         start.datetime <- as.POSIXct(isolate(input$start_datetime), format='%m/%d/%Y %H:%M')
-        end.datetime <- start.datetime + as.difftime(input$duration, units='hours')
+        end.datetime <- start.datetime + as.difftime(isolate(input$duration), units='hours')
         ggplotGrob(make.dye.mass.plot(dye.mass.by.time, start.datetime, end.datetime))
       } else {
         textGrob('Upload your data, set the start time and duration, and press submit to process.')
