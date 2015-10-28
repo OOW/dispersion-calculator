@@ -134,7 +134,7 @@ pivot.raw <- function(axis., other.axes, var, list.raw) {
 #'      at each grid cell.
 #' @return a vector of the concentration second moments along the specified axis, ordered by timestep
 getAxisSecondMoments <- function(axis., delta.list.raw, coor.list.raw, dye.list.raw) {
-    #browser()
+
     # define the names of the axes and identify the other axes according the axis. argument
     axes. <- c('x', 'y', 'z')
     other.axes <- setdiff(axes., axis.)
@@ -234,7 +234,7 @@ calculateDyeMass <- function(delta.raw, dye.raw){
 #' @return A list with the concentration weight average second moments for each axis
 performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, 
                             depth_file_type, start.datetime, hours, x.idx.first.cell, nlayers) {
-    #browser()
+
     # read in the delta data and name the columns
     # skip the first 4 rows, and only read the first 4 columns
     dxdy.inp <- read.table(dxdy.inp.path, skip=4, header=FALSE, fill=TRUE)[1:4]
@@ -352,7 +352,7 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
 
     # subset the coordinate data to the desired time range
     coor.list.raw <- coor.list.raw[timestamp.idxs]
-    browser()
+
     # calculte the delta z values and combine them with the delta x and delta y values
     delta.list.raw <- lapply(depth.list, function(depth.timestep) {
         
