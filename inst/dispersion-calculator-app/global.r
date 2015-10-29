@@ -9,8 +9,9 @@ library(zoo)
 # turn off daylight savings time
 Sys.setenv(TZ='EST')
 
-# change the default maximum upload file size
-options(shiny.maxRequestSize=300*1024^2)
+# change the default maximum upload file size to 2 GB
+#options(shiny.maxRequestSize=300*1024^2)
+options(shiny.maxRequestSize=2048*1024^2)
 
 #' Takes the path to a matrix timeseries file in which the matrices 
 #' are stacked vertically and returns a list where each item in the list 
