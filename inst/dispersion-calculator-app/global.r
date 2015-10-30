@@ -5,6 +5,7 @@ library(RColorBrewer)
 library(grid)
 library(shiny)
 library(zoo)
+options(stringsAsFactors = FALSE)
 
 # turn off daylight savings time
 Sys.setenv(TZ='EST')
@@ -72,7 +73,7 @@ stackedTimeseriesToList_ForNewDepth <- function(path) {
     return(final_t)
   })
   # use the timesteps as the names of the entries in the list 
-  foo <- setNames(lst, timesteps)
+  setNames(lst, timesteps)
 }
 
 #' Takes a list of matrices and returns a 3D array
@@ -234,13 +235,18 @@ calculateDyeMass <- function(delta.raw, dye.raw){
 #' @param hours Number of hours after start.datetime to process
 #' @return A list with the concentration weight average second moments for each axis
 performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, 
-                            depth_file_type, start.datetime, hours, x.idx.first.cell, nlayers) {
+                            depth_file_type, start.datetime, hours, x.idx.first.cell, 
+                            nlayers, r_yr) {
 
     # read in the delta data and name the columns
     # skip the first 4 rows, and only read the first 4 columns
     dxdy.inp <- read.table(dxdy.inp.path, skip=4, header=FALSE, fill=TRUE)[1:4]
     names(dxdy.inp) <- c('x', 'y', 'dx', 'dy')
 
+    # read in the bottom elevation datum data (in inorder to compute the bathymetry)
+    depth_bathymetry <- read.table(dxdy.inp.path, skip=4, header=FALSE, fill=TRUE)[6]
+    names(depth_bathymetry) <- c('depth_bathymetry')
+    
     # define the number of layers in the z direction
     # set as reactive input now
     #nlayers <- 5
@@ -257,15 +263,17 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
 
     # extract the julian day timesteps from dye.list.raw and convert them to
     # full datetime strings
+
     timestamps.chr <- strsplit(names(dye.list.raw), '.', fixed=TRUE)
-    timestamps.chr <- lapply(timestamps.chr, function(ts, year) {
-        tot.mins <- round(as.numeric(paste0('.', ts[2])) * 24 * 60)
-        hours <- tot.mins %/% 60
-        mins <- tot.mins %% 60
-        paste(ts[1], hours, mins, year)
-    }, year=format(start.datetime, '%Y'))
+    timestamps.chr <- lapply(timestamps.chr, function(ts) {
+      tot.mins <- round(as.numeric(paste0('.', ts[2])) * 24 * 60)
+      hours <- tot.mins %/% 60
+      mins <- tot.mins %% 60
+      t_date <- as.Date(paste0(r_yr, "-01-01")) + as.numeric(ts[1])
+      paste(t_date, hours, mins)
+    })
     # convert the timestep datetime strings to POSIXct datetimes
-    timestamps <- lapply(timestamps.chr, as.POSIXct, format='%j %H %M %Y')
+    timestamps <- lapply(timestamps.chr, as.POSIXct, format='%Y-%m-%d %H %M')
     # define the end of the analysis
     end.datetime <- start.datetime + as.difftime(hours, units='hours')
     # get the indexes that correspond to the desired time frame
@@ -331,7 +339,7 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
     }
 
     coor.list.raw <- lapply(depth.list, function(depth.timestep) {
-      
+
       # Calculate the adjusted depth
       if(depth_file_type == 1){
         # final depth is the sum of first and second columns of the depth input
@@ -339,9 +347,9 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
       }
       if(depth_file_type == 2){
         # The new format does not have an adjustment factor
-        depth.adj <- depth.timestep[1]
+        depth.adj <- depth.timestep[1] + abs(depth_bathymetry) #there is only one column, [1] is redundant
       }
- 
+
       # for each x-y pair, create the depth coordinates
       depths <- t(apply(depth.adj, 1, function(depth) seq(from=depth/nlayers, to=depth, by=depth/nlayers)))
       # combine the depth coordinates with the x-y coordinates and melt the z columns in rows
@@ -366,7 +374,7 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
         # The new format does not have an adjustment factor
         depth.adj <- depth.timestep[1]
       }
-      
+
       # calculate the delta z series for each x-y pair
       deltas <- t(apply(depth.adj, 1, function(depth) rep(depth/nlayers, nlayers)))
       # combine the delta z data with the delta x and delta y data, then melt the z columns into rows
