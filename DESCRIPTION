@@ -1,6 +1,6 @@
 Package: DispersionCalculator
 Title: Dispersion rate calculator for 3D open channels.
-Version: 0.4
+Version: 0.5
 Authors@R: c(person('Matthew', 'Plourde',email='plourde.m@gmail.com', role=c('aut', 'cre')),
              person('Edward', 'Lennon',email='edward.lennonjr@phila.gov', role='aut'))
 Description: Calculates the concentration weighted average second

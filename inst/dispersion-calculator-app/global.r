@@ -347,7 +347,7 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
       }
       if(depth_file_type == 2){
         # The new format does not have an adjustment factor
-        depth.adj <- depth.timestep[1] + abs(depth_bathymetry) #there is only one column, [1] is redundant
+        depth.adj <- depth.timestep[1] + abs(depth_bathymetry) # bathymetery adj is now in the dxdy file
       }
 
       # for each x-y pair, create the depth coordinates
@@ -372,7 +372,7 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
       }
       if(depth_file_type == 2){
         # The new format does not have an adjustment factor
-        depth.adj <- depth.timestep[1]
+        depth.adj <- depth.timestep[1] + abs(depth_bathymetry) # bathymetery adj is now in the dxdy file
       }
 
       # calculate the delta z series for each x-y pair

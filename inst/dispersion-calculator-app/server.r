@@ -102,7 +102,19 @@ shinyServer( function(input, output, session) {
         dev.off()
       }
     )
+
+    output$download_data <- downloadHandler(
+      filename = function() {'analysis_results.csv'}, 
+      content = function(file) {
+        d <- analysisResults()
+        d <- as.data.frame(d)
+        names(d) <- c("weighted average m^2 x", "weighted average m^2 y", "weighted average m^2 z", "dye_mass kg")
+        write.csv(d, file, quote=FALSE, row.names=FALSE)
+      }
+    )
     
+    
+        
     session$onSessionEnded(function() {
       stopApp()
     })

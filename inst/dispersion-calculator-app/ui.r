@@ -1,6 +1,6 @@
 shinyUI(
   pageWithSidebar(
-    headerPanel('DispersionCalculator v0.4'),
+    headerPanel('DispersionCalculator v0.5'),
     sidebarPanel(
       wellPanel(
         fileInput('dye_input', strong('Dye input (*.asc)')),
@@ -28,6 +28,9 @@ shinyUI(
       wellPanel(
         downloadButton('download_1', 'Download second-moment plot'), 
         downloadButton('download_2', 'Download dye mass inventory plot')
+      ),
+      wellPanel(
+      downloadButton(outputId='download_data', label='Download Results')
       )
     ),
     mainPanel(plotOutput('second_moment_timeseries', height='800px'),
