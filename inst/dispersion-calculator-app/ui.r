@@ -10,8 +10,9 @@ shinyUI(
       wellPanel(
         radioButtons("depth_file_type", label = "Choose Depth File Type",
                      choices = list("Older (3 cloumns)" = 1, "Newer (25 columns wrapped)" = 2), 
-                     selected = 1),
+                     selected = 2),
         datetimeInput('start_datetime', strong('Start time')),
+        numericInput('r_yr', strong('Timestamp reference year (YYYY)'), value=2010),
         numericInput('timestep', strong('timestep (minutes)'), value=15),
         numericInput('duration', strong('Duration (hours)'), value=2),
         numericInput('x.idx.first.cell', strong('First idx x Cell'), value=1), #237 for past

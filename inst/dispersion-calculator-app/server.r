@@ -4,6 +4,7 @@ shinyServer( function(input, output, session) {
   observe({
     
     if(!is.null(input$dye_input)){
+      r_yr <- as.character(input$r_yr)
       dye.path <- input$dye_input
       dye.path <- dye.path$datapath
       start_dtime.chr <- trimws(readLines(dye.path,n = 1))
@@ -11,9 +12,10 @@ shinyServer( function(input, output, session) {
       tot.mins <- round(as.numeric(paste0('.', start_dtime.chr[2])) * 24 * 60)
       hours <- tot.mins %/% 60
       mins <- tot.mins %% 60
-      start_datetime <- paste(start_dtime.chr[1], hours, mins, format(Sys.Date(), '%Y'))
+      t_date <- as.Date(paste0(r_yr, "-01-01")) + as.numeric(start_dtime.chr[1])
+      start_datetime <- paste(t_date, hours, mins)
       # convert the timestep datetime strings to POSIXct datetimes
-      start_datetime <- as.POSIXct(start_datetime, format='%j %H %M %Y')
+      start_datetime <- as.POSIXct(start_datetime, format='%Y-%m-%d %H %M')
       start_datetime <- format(start_datetime, format='%m/%d/%Y %H:%M')
       # update start datetime when dye file is uploaded
       updateDateInput(session, "start_datetime",
@@ -32,12 +34,14 @@ shinyServer( function(input, output, session) {
                  duration <- input$duration
                  x.idx.first.cell <- input$x.idx.first.cell
                  nlayers <- input$nlayers
+                 r_yr <- as.character(input$r_yr)
                 })
 
         if (! any(sapply(list(dye.path, dxdy.inp.path, depth.path, start.datetime), is.null))) {
             start.datetime <- as.POSIXct(start.datetime, format='%m/%d/%Y %H:%M')
             performAnalysis(dye.path$datapath, dxdy.inp.path$datapath, depth.path$datapath, 
-                            input$depth_file_type, start.datetime, duration, x.idx.first.cell, nlayers)
+                            input$depth_file_type, start.datetime, duration, x.idx.first.cell,
+                            nlayers, r_yr)
         }
     })
 
