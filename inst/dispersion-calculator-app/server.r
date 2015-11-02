@@ -109,7 +109,7 @@ shinyServer( function(input, output, session) {
         d <- analysisResults()
         d <- as.data.frame(d)
         names(d) <- c("weighted average m^2 x", "weighted average m^2 y", "weighted average m^2 z", "dye_mass kg")
-        write.csv(d, file, quote=FALSE, row.names=FALSE)
+        write.csv(d, file, quote=FALSE, row.names=TRUE)
       }
     )
     
