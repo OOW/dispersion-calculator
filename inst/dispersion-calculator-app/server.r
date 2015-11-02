@@ -4,7 +4,7 @@ shinyServer( function(input, output, session) {
   observe({
     
     if(!is.null(input$dye_input)){
-      r_yr <- as.character(input$r_yr)
+      r_yr <- as.character(input$r_yr - 1)
       dye.path <- input$dye_input
       dye.path <- dye.path$datapath
       start_dtime.chr <- trimws(readLines(dye.path,n = 1))
@@ -12,7 +12,7 @@ shinyServer( function(input, output, session) {
       tot.mins <- round(as.numeric(paste0('.', start_dtime.chr[2])) * 24 * 60)
       hours <- tot.mins %/% 60
       mins <- tot.mins %% 60
-      t_date <- as.Date(paste0(r_yr, "-01-01")) + as.numeric(start_dtime.chr[1])
+      t_date <- as.Date(paste0(r_yr, "-12-31")) + as.numeric(start_dtime.chr[1])
       start_datetime <- paste(t_date, hours, mins)
       # convert the timestep datetime strings to POSIXct datetimes
       start_datetime <- as.POSIXct(start_datetime, format='%Y-%m-%d %H %M')
@@ -34,7 +34,7 @@ shinyServer( function(input, output, session) {
                  duration <- input$duration
                  x.idx.first.cell <- input$x.idx.first.cell
                  nlayers <- input$nlayers
-                 r_yr <- as.character(input$r_yr)
+                 r_yr <- as.character(input$r_yr - 1)
                 })
 
         if (! any(sapply(list(dye.path, dxdy.inp.path, depth.path, start.datetime), is.null))) {
