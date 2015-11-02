@@ -269,7 +269,7 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
       tot.mins <- round(as.numeric(paste0('.', ts[2])) * 24 * 60)
       hours <- tot.mins %/% 60
       mins <- tot.mins %% 60
-      t_date <- as.Date(paste0(r_yr, "-01-01")) + as.numeric(ts[1])
+      t_date <- as.Date(paste0(r_yr, "-12-31")) + as.numeric(ts[1])
       paste(t_date, hours, mins)
     })
     # convert the timestep datetime strings to POSIXct datetimes
