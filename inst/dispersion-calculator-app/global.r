@@ -162,8 +162,11 @@ getAxisSecondMoments <- function(axis., delta.list.raw, coor.list.raw, dye.list.
 
     # turn the pivoted list of data.frames into 3D arrays, where the 3rd dimension is timestep
     z <- listTo3DArray(coor.list, exclude.cols=c(other.axes, other.coor.vars))
+    rm(coor.list)
     cz <- listTo3DArray(dye.list, exclude.cols=c(other.axes))
+    rm(dye.list)
     dz <- listTo3DArray(delta.list, exclude.cols=c(other.axes, other.delta.vars))
+    #rm(delta.list)
 
     # replace negative values in the coordinates and deltas with their absolute values
     z <- abs(z)
