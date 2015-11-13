@@ -1,5 +1,5 @@
 ---
-title: "DispersionCalculator v0.4"
+title: "DispersionCalculator v0.6"
 output: html_document
 ---
 
