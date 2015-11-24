@@ -1,4 +1,4 @@
----
+﻿---
 title: "DispersionCalculator v0.6"
 output: html_document
 ---
@@ -10,13 +10,13 @@ This document explains DispersionCalculator's method for estimating dispersion c
 The calculator requires three input files:
 
 ##### Dxdy input
-Each row in this file corresponds to a cell in the two dimensional XY grid of the water body. The first two columns contain the integer pairs that index the 2D cells and the other two columns contain the cell dimensions.
+Each row in this file corresponds to a cell in the two dimensional XY grid of the water body. The first two columns contain the integer pairs that index the 2D cells and the next two columns contain the cell dimensions.  The next two columns are depth and bottom elevation.
 
 ##### Dye input
-This file contains the concentrations for each cell in the three dimensional grid space of the water body at every timestep. The timestep blocks are delimited by single column rows that specify the timestep in julian days. Each row within a timestep block defines the concentrations along the Z direction for a cell in the two dimensional XY grid. The order of the rows matches the order of the rows in the Dxdy input file. In the three dimensional grid, the space above an XY cell divides into 5 cells, so for each row, there are five columns.
+This file contains the concentrations for each cell in the three dimensional grid space of the water body at every timestep. The timestep blocks are delimited by single column rows that specify the timestep in julian days. Each row within a timestep block defines the concentrations along the Z direction for a cell in the two dimensional XY grid. The order of the rows matches the order of the rows in the Dxdy input file. In the usual three dimensional grid, the space above an XY cell divides into 5 cells, so for each row, there are five columns.
 
 ##### Depth input
-This file indicates the water level above each XY cell and follows the same format as as the Dye input file. The first column of a timestep block indicates the water level and the second column indicates the adjustment factor.
+This file indicates the water level above each XY cell and follows the same format as as the Dye input file. The first column of a timestep block indicates the water level and the second column indicates the time varying water level referenced to NAVD88.
 
 ### Preparing the data
 
