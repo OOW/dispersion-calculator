@@ -438,9 +438,10 @@ make.moment.plot <- function(moment2.by.time, start.datetime, end.datetime, time
         stat_smooth(method='lm', se=FALSE) +
         facet_wrap(~ axis, ncol=1, scales='free_y') + 
         labs(title=bquote(atop(.(date.range), 
-                   paste(list(K[x]==.(format(round(Ks[[1]], 2),scientific = TRUE)), 
-                              K[y]==.(format(round(Ks[[2]], 2),scientific = TRUE)), 
-                              K[z]==.(format(round(Ks[[3]], 8),scientific = TRUE))), ~~(frac(m^2, s))))),
+                   paste(list(K[x]==.(format(signif(Ks[[1]], digits = 3), scientific = TRUE)), 
+                              K[y]==.(format(signif(Ks[[2]], digits = 3), scientific = TRUE)), 
+                              K[z]==.(format(signif(Ks[[3]], digits = 3), scientific = TRUE))), 
+                         ~~(frac(m^2, s))))),
              y=expression("Weighted Average of Concentration Variance"~~(m^2)))  +
         scale_x_continuous(breaks=1:max(full.tab.raw$timestep)) + theme(axis.text=element_text(vjust=-.4))
     p
