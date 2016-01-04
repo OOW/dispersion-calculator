@@ -415,7 +415,7 @@ make.moment.plot <- function(moment2.by.time, start.datetime, end.datetime, time
     # and the last second moment, scale by seconds
     # compute the seconds in each timestep
     secs.in.timestep <- timestep * 60 # hour * * 60 sec/min
-    
+   
     Ks <- lapply(moment2.by.time, function(axis) {
         # old method, slope from first and last data point
         #(.5 * ((tail(axis, 1) - head(axis, 1)) / (tail(hour.range, 1) - head(hour.range, 1)))) / secs.in.hr
@@ -438,7 +438,9 @@ make.moment.plot <- function(moment2.by.time, start.datetime, end.datetime, time
         stat_smooth(method='lm', se=FALSE) +
         facet_wrap(~ axis, ncol=1, scales='free_y') + 
         labs(title=bquote(atop(.(date.range), 
-                   paste(list(K[x]==.(round(Ks[[1]], 2)), K[y]==.(round(Ks[[2]], 2)), K[z]==.(round(Ks[[3]], 8))), ~~(frac(m^2, s))))),
+                   paste(list(K[x]==.(format(round(Ks[[1]], 2),scientific = TRUE)), 
+                              K[y]==.(format(round(Ks[[2]], 2),scientific = TRUE)), 
+                              K[z]==.(format(round(Ks[[3]], 8),scientific = TRUE))), ~~(frac(m^2, s))))),
              y=expression("Weighted Average of Concentration Variance"~~(m^2)))  +
         scale_x_continuous(breaks=1:max(full.tab.raw$timestep)) + theme(axis.text=element_text(vjust=-.4))
     p
