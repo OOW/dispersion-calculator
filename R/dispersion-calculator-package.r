@@ -8,5 +8,5 @@ library(shiny)
 
 #' @export 
 DispersionCalculator <- function() {
-    runApp(system.file('dispersion-calculator-app', package='DispersionCalculator'))
+    runApp(system.file('dispersion-calculator-app', package='DispersionCalculator'), launch.browser=TRUE)
 }
