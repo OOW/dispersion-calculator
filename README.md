@@ -20,7 +20,8 @@ library(devtools)
 # set httr proxy, if necessary
 #library(httr)
 #set_config(use_proxy("webproxy.phila.gov", 8080))
-install_github('OOW/dispersion-calculator')
+#install_github('OOW/dispersion-calculator')
+install_github('OOW/dispersion-calculator', ref = "working_r_v351")
 ```
 
 If `install_github` still fails, [download](https://github.com/OOW/dispersion-calculator/archive/master.zip) a zipfile of this repository from github and follow these steps.
