@@ -16,14 +16,14 @@ shinyServer( function(input, output, session) {
       start_datetime <- paste(t_date, hours, mins)
       # convert the timestep datetime strings to POSIXct datetimes
       start_datetime <- as.POSIXct(start_datetime, format='%Y-%m-%d %H %M')
-      start_datetime <- format(start_datetime, format='%m/%d/%Y %H:%M')
+      start_datetime <- as.POSIXct(start_datetime, format='%m/%d/%Y %H:%M')
       # update start datetime when dye file is uploaded
       updateDateInput(session, "start_datetime",
                       value = start_datetime)
     }
   })
   
-  
+
   analysisResults <- reactive({
         input$submit
 
@@ -69,10 +69,12 @@ shinyServer( function(input, output, session) {
     })
     
     output$download_1 <- downloadHandler(
-      filename='second_moment_plot.png',
+      filename= function(){
+        paste0('second_moment_plot.png')
+      },
       content=function(filename) {
         png(filename=filename, height=800, width=600)
-        grid.draw(second_moment_plot())
+        print(grid.draw(second_moment_plot()))
         dev.off()
       }
     )
@@ -105,11 +107,11 @@ shinyServer( function(input, output, session) {
 
     output$download_data <- downloadHandler(
       filename = function() {'analysis_results.csv'}, 
-      content = function(file) {
+      content = function(filename) {
         d <- analysisResults()
         d <- as.data.frame(d)
         names(d) <- c("weighted average m^2 x", "weighted average m^2 y", "weighted average m^2 z", "dye_mass kg")
-        write.csv(d, file, quote=FALSE, row.names=TRUE)
+        write.csv(d, filename, quote=FALSE, row.names=TRUE)
       }
     )
     

@@ -85,12 +85,13 @@ listTo3DArray <- function(lst, exclude.cols=c()) {
     # turn each entry in lst into a matrix and remove the exclude.cols
     matrix.list <- lapply(lst, function(timestep) {
         cols <- timestep[setdiff(names(timestep), exclude.cols)]
-        as.matrix(cols)
+        #as.matrix(cols)
     })
     # get the dimensions of the matices
     matrix.dim <- dim(matrix.list[[1]])
     # turn the list of matrices into a 3D array.
-    array(unlist(matrix.list), dim=c(matrix.dim, length(matrix.list)), dimnames=c('cell', 'axis', 'timestep'))
+    array(unlist(matrix.list), dim=c(matrix.dim, length(matrix.list)), dimnames=
+            list(dimnames(matrix.list[[1]])[[1]],dimnames(matrix.list[[1]])[[2]],names(matrix.list)))
 }
 
 #' Takes a list of data.frames that each have column for x, y, and z axes and measurement for each 
@@ -181,10 +182,14 @@ getAxisSecondMoments <- function(axis., delta.list.raw, coor.list.raw, dye.list.
     z2.cz.dz <- z^2 * cz.dz
     int.z.cz.dz <- apply(z.cz.dz, c(1,3), sum, na.rm=TRUE)
     moment1 <- int.z.cz.dz / int.cz.dz
+    # replace NaN with 0
+    moment1[is.nan(moment1)] <- 0
 
     # calculate the second moment
     int.z2.cz.dz <- apply(z2.cz.dz, c(1,3), sum, na.rm=TRUE)
     moment2 <- int.z2.cz.dz / int.cz.dz - moment1^2
+    # replace NaN with 0
+    moment2[is.nan(moment2)] <- 0
 
     # for each of the other axes, get the delta data.frame lists, then multiply them
     # together and convert the list of data.frames to a 3D array
@@ -203,6 +208,7 @@ getAxisSecondMoments <- function(axis., delta.list.raw, coor.list.raw, dye.list.
     dint.z2.Cxy.dxdy <- apply(z2.Cxy.dxdy, 2, sum, na.rm=TRUE)
 
     moment2.mean <- dint.z2.Cxy.dxdy / dint.Cxy.dxdy
+    moment2.mean[is.nan(moment2.mean)] <- 0
     moment2.mean
 }
 
@@ -240,7 +246,7 @@ calculateDyeMass <- function(delta.raw, dye.raw){
 performAnalysis <- function(dye.path, dxdy.inp.path, depth.path, 
                             depth_file_type, start.datetime, hours, x.idx.first.cell, 
                             nlayers, r_yr) {
-
+  
     # read in the delta data and name the columns
     # skip the first 4 rows, and only read the first 4 columns
     dxdy.inp <- read.table(dxdy.inp.path, skip=4, header=FALSE, fill=TRUE)[1:4]
@@ -288,12 +294,16 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
     # pivot the dxdy data so that the x direction index are the columns and the y direction indexes are the rows.
     # the value in each cell in this matrix is the delta x value corresponding to that cell
     dx.matrix <- dcast(dxdy.inp, y ~ x, value.var='dx')
+    #print(dx.matrix)
+    #print(str(dx.matrix))
     # For x-y pairs that don't have a delta x value, fill these pairs with the last delta x value along the 
     # y direction, or if there is no delta x before some cell, fill it with the next non-missing delta x value.
-    dx.matrix.filled <- na.locf(na.locf(dx.matrix), fromLast=TRUE)
+    dx.matrix.filled <- na.locf(na.locf(dx.matrix, na.rm = F), fromLast=TRUE)
     # set the rownames to the y direction indexes and remove the column of y indexes
     rownames(dx.matrix.filled) <- dx.matrix.filled[[1]]
     dx.matrix.filled <- as.matrix(dx.matrix.filled[-1])
+    #print("dx.matrix.filled")
+    #print(dx.matrix.filled)
 
     # this is the x direction index corresponding to the lowest, left-most grid cell in the domain
     # set as reactive input now
@@ -302,23 +312,25 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
     # for each grid cell, calculate that grid cells x coordinate by summing up all of the 
     # delta x's between the cell and the first cell
     # 1 in apply means apply function over the matrix's row
-    x.coors <- t(apply(dx.matrix.filled, 1, function(row) {
+    x.coors <- t(apply(dx.matrix.filled, 1 ,function(row) {
         c(-rev(cumsum(row[x.idx.first.cell:1])), cumsum(c(0, row[(x.idx.first.cell + 1):(length(row)-1)])))
     }))
+    
     # Put back the missing values that were filled
     x.coors[is.na(as.matrix(dx.matrix[-1]))] <- NA
+
     dimnames(x.coors) <- dimnames(dx.matrix.filled)
 
     # repeat the coordinate calculation process for the y axis
     dy.matrix <- dcast(dxdy.inp, x ~ y, value.var='dy')
-    dy.matrix.filled <- na.locf(na.locf(dy.matrix), fromLast=TRUE)
+    dy.matrix.filled <- na.locf(na.locf(dy.matrix, na.rm = F), fromLast=TRUE)
     rownames(dy.matrix.filled) <- dy.matrix.filled[[1]]
     dy.matrix.filled <- as.matrix(dy.matrix.filled[-1])
 
     y.coors <- t(apply(dy.matrix.filled, 1, function(row) cumsum(c(0, head(row, -1)))))
     y.coors[is.na(as.matrix(dy.matrix[-1]))] <- NA
     dimnames(y.coors) <- dimnames(dy.matrix.filled)
-
+    
     # add the y column back to x coordinates, melt the x columns back into rows, remove 
     # the entries that have missing values
     x.coors.final <- data.frame(cbind(dx.matrix['y'], x.coors), check.names=FALSE)
@@ -340,9 +352,8 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
     if(depth_file_type == 2){
       depth.list <- stackedTimeseriesToList_ForNewDepth(depth.path)
     }
-
+    
     coor.list.raw <- lapply(depth.list, function(depth.timestep) {
-
       # Calculate the adjusted depth
       if(depth_file_type == 1){
         # final depth is the sum of first and second columns of the depth input
@@ -352,22 +363,29 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
         # The new format does not have an adjustment factor
         depth.adj <- depth.timestep[1] + abs(depth_bathymetry) # bathymetery adj is now in the dxdy file
       }
-
       # for each x-y pair, create the depth coordinates
       depths <- t(apply(depth.adj, 1, function(depth) seq(from=depth/nlayers, to=depth, by=depth/nlayers)))
       # combine the depth coordinates with the x-y coordinates and melt the z columns in rows
-      d <- data.frame(coors, setNames(as.data.frame(depths), 1:nlayers), check.names=FALSE)
+      if(length(depths) > nrow(depth_bathymetry)){
+        d <- data.frame(coors, setNames(as.data.frame(depths), 1:nlayers), check.names=FALSE)
+      }
+      if(length(depths) == nrow(depth_bathymetry)){
+        d <- data.frame(coors, setNames(do.call(rbind.data.frame,depths), 1:nlayers), check.names=FALSE)
+      }
+   
       d <- melt(d, id.vars=c('x', 'y', 'xcoor', 'ycoor'), variable.name='z', value.name='zcoor')
+      
       # convert the z indexes to integers
       transform(d, z=as.integer(as.character(levels(z)))[as.numeric(z)])
     })
 
     # subset the coordinate data to the desired time range
     coor.list.raw <- coor.list.raw[timestamp.idxs]
+    
+    
 
     # calculte the delta z values and combine them with the delta x and delta y values
     delta.list.raw <- lapply(depth.list, function(depth.timestep) {
-        
       # Calculate the adjusted depth
       if(depth_file_type == 1){
         # final depth is the sum of first and second columns of the depth input
@@ -375,9 +393,8 @@ performAnalysis <- function(dye.path, dxdy.inp.path, depth.path,
       }
       if(depth_file_type == 2){
         # The new format does not have an adjustment factor
-        depth.adj <- depth.timestep[1] + abs(depth_bathymetry) # bathymetery adj is now in the dxdy file
-      }
-
+        depth.adj <- depth.timestep[1] + abs(depth_bathymetry) # bathymetery adj is now in the dxdy fil
+        }
       # calculate the delta z series for each x-y pair
       deltas <- t(apply(depth.adj, 1, function(depth) rep(depth/nlayers, nlayers)))
       # combine the delta z data with the delta x and delta y data, then melt the z columns into rows

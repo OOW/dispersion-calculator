@@ -8,7 +8,6 @@ Installation and Usage
 Install the *devtools* to allow R to install packages from github.
 
 ```r
-setInternet2() # enable R to use your proxy settings, if necessary
 options(repos=c(CRAN='http://cran.us.r-project.org')) # set your repository
 install.packages('devtools')
 ```
@@ -17,9 +16,13 @@ Load *devtools*, and install this repository.
 
 ```r
 library(devtools)
-# set httr proxy, if necessary
-# library(httr)
-# set_config(httr::use_proxy(url="webproxy.phila.gov", port=8080))
+#set httr proxy, if necessary
+# Or setup the proxy for R with the instruction in the link below
+# https://support.rstudio.com/hc/en-us/articles/200488488-Configuring-R-to-Use-an-HTTP-or-HTTPS-Proxy
+library(httr)
+set_config(use_proxy(proxy_address, port)) # update prox_address and port with your own proxy settings
+
+# install package from github
 install_github('OOW/dispersion-calculator')
 ```
 
@@ -28,9 +31,8 @@ If `install_github` still fails, [download](https://github.com/OOW/dispersion-ca
 1.  Extract the zipfile and browse to the directory in this repository containing the inst folder.
 2.  Open R and set your working directory to this directory.
 3.  load devtools: `library(devtools)`
-4.  Turn on support for your webproxy, if necessary: `setInternet2()`
-5.  Set your CRAN repository: `options(repos=list(CRAN="http://cran.us.r-project.org"))`
-6.  Install **dispersion-calculator**: `install()`
+4.  Set your CRAN repository: `options(repos=list(CRAN="http://cran.us.r-project.org"))`
+5.  Install **dispersion-calculator**: `install()`
 
 
 Load and launch *DispersionCalculator*:
