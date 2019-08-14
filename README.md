@@ -8,7 +8,6 @@ Installation and Usage
 Install the *devtools* to allow R to install packages from github.
 
 ```r
-setInternet2() # enable R to use your proxy settings, if necessary
 options(repos=c(CRAN='http://cran.us.r-project.org')) # set your repository
 install.packages('devtools')
 ```
@@ -18,8 +17,10 @@ Load *devtools*, and install this repository.
 ```r
 library(devtools)
 #set httr proxy, if necessary
+# Or setup the proxy for R with the instruction in the link below
+# https://support.rstudio.com/hc/en-us/articles/200488488-Configuring-R-to-Use-an-HTTP-or-HTTPS-Proxy
 library(httr)
-set_config(use_proxy(proxy_address, port)) # update prox_address and port with your proxy settings
+set_config(use_proxy(proxy_address, port)) # update prox_address and port with your own proxy settings
 
 # install package from github
 install_github('OOW/dispersion-calculator')
