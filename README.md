@@ -17,21 +17,20 @@ Load *devtools*, and install this repository.
 
 ```r
 library(devtools)
-# set httr proxy, if necessary
-#library(httr)
-#set_config(use_proxy("webproxy.phila.gov", 8080))
-#install_github('OOW/dispersion-calculator')
+#set httr proxy, if necessary
+library(httr)
+set_config(use_proxy("webproxy.phila.gov", 8080))
+install_github('OOW/dispersion-calculator')
 install_github('OOW/dispersion-calculator', ref = "working_r_v351")
 ```
 
-If `install_github` still fails, [download](https://github.com/OOW/dispersion-calculator/archive/master.zip) a zipfile of this repository from github and follow these steps.
+If `install_github` still fails, [download](https://github.com/OOW/dispersion-calculator/archive/working_r_v351.zip) a zipfile of this repository from github and follow these steps.
 
 1.  Extract the zipfile and browse to the directory in this repository containing the inst folder.
 2.  Open R and set your working directory to this directory.
 3.  load devtools: `library(devtools)`
-4.  Turn on support for your webproxy, if necessary: `setInternet2()`
-5.  Set your CRAN repository: `options(repos=list(CRAN="http://cran.us.r-project.org"))`
-6.  Install **dispersion-calculator**: `install()`
+4.  Set your CRAN repository: `options(repos=list(CRAN="http://cran.us.r-project.org"))`
+5.  Install **dispersion-calculator**: `install()`
 
 
 Load and launch *DispersionCalculator*:
