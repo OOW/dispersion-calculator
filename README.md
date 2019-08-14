@@ -19,12 +19,13 @@ Load *devtools*, and install this repository.
 library(devtools)
 #set httr proxy, if necessary
 library(httr)
-set_config(use_proxy(proxy_address, port))
+set_config(use_proxy(proxy_address, port)) # update the prox_address and port with your proxy settings
+
+# install package from github
 install_github('OOW/dispersion-calculator')
-install_github('OOW/dispersion-calculator', ref = "working_r_v351")
 ```
 
-If `install_github` still fails, [download](https://github.com/OOW/dispersion-calculator/archive/working_r_v351.zip) a zipfile of this repository from github and follow these steps.
+If `install_github` still fails, [download](https://github.com/OOW/dispersion-calculator/archive/master.zip) a zipfile of this repository from github and follow these steps.
 
 1.  Extract the zipfile and browse to the directory in this repository containing the inst folder.
 2.  Open R and set your working directory to this directory.
