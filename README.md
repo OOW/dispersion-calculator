@@ -19,7 +19,7 @@ Load *devtools*, and install this repository.
 library(devtools)
 #set httr proxy, if necessary
 library(httr)
-set_config(use_proxy(proxy_address, port)) # update the prox_address and port with your proxy settings
+set_config(use_proxy(proxy_address, port)) # update prox_address and port with your proxy settings
 
 # install package from github
 install_github('OOW/dispersion-calculator')
