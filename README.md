@@ -19,7 +19,7 @@ Load *devtools*, and install this repository.
 library(devtools)
 #set httr proxy, if necessary
 library(httr)
-set_config(use_proxy("webproxy.phila.gov", 8080))
+set_config(use_proxy(proxy_address, port))
 install_github('OOW/dispersion-calculator')
 install_github('OOW/dispersion-calculator', ref = "working_r_v351")
 ```
